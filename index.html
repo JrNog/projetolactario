@@ -1,0 +1,2785 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lactário Digital | Hospital São Paulo (UNIFESP-EPM)</title>
+  <meta name="description" content="Lactário Digital do Hospital São Paulo (UNIFESP-EPM) - Sistema hospitalar para gestão de censo de leitos pediátricos, cálculos de diluição em bancada de preparo, emissão de etiquetas térmicas Zebra e controle de estoque de fórmulas.">
+  <meta property="og:title" content="Lactário Digital | Hospital São Paulo (UNIFESP-EPM)">
+  <meta property="og:description" content="Sistema de gestão do censo pediátrico, bancada de manipulação de dietas e emissão de etiquetas térmicas Zebra do Hospital São Paulo.">
+  <meta property="og:type" content="website">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              800: '#0c4a6e',
+              900: '#082f49',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Estilos Customizados e de Impressão -->
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/print-zebra.css">
+</head>
+<body class="bg-slate-100 text-slate-900 h-screen max-h-screen flex flex-col antialiased w-full overflow-hidden">
+
+  <!-- Link de Acessibilidade (WCAG Skip Link) -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:p-3 focus:bg-sky-800 focus:text-white focus:font-black focus:rounded-lg focus:shadow-xl">
+    Pular para o conteúdo principal
+  </a>
+
+  <!-- ====================================================================
+       1. CABEÇALHO INSTITUCIONAL COMPACTO (ALTA DENSIDADE VERTICAL)
+       ==================================================================== -->
+  <header class="bg-gradient-to-r from-slate-950 via-purple-950/40 to-slate-950 border-b border-purple-900/30 text-white shrink-0 z-40 shadow-xs w-full">
+    <div class="w-full px-3 sm:px-4 lg:px-6">
+      
+      <!-- Linha Superior dos Logos e Ações Rápidas (Compacta h-14) -->
+      <div class="flex justify-between items-center h-14">
+        
+        <!-- Identidade Oficial: Logos do Hospital São Paulo + UNIFESP Lado a Lado -->
+        <div class="flex items-center gap-2.5">
+          <div class="flex items-center gap-2">
+            <img 
+              src="assets/logo_hsp.png" 
+              alt="Logo Hospital São Paulo" 
+              class="h-8 w-auto object-contain drop-shadow-xs"
+              onerror="this.style.display='none';"
+            />
+            <div class="h-6 w-px bg-purple-800/60"></div>
+            <img 
+              src="assets/logo_unifesp.png" 
+              alt="Logo UNIFESP" 
+              class="h-6 w-auto object-contain drop-shadow-xs"
+              onerror="this.style.display='none';"
+            />
+            <img 
+              src="assets/logo_spdm.png" 
+              alt="Logo SPDM" 
+              class="h-6 w-auto object-contain drop-shadow-xs hidden md:block opacity-85"
+              onerror="this.style.display='none';"
+            />
+          </div>
+
+          <div class="border-l border-purple-800/60 pl-2.5">
+            <div class="flex items-center gap-1.5">
+              <h1 class="text-sm font-black text-white tracking-tight leading-none">HOSPITAL SÃO PAULO</h1>
+              <span class="text-[10px] px-1.5 py-0.2 rounded font-extrabold bg-purple-500/20 text-purple-200 border border-purple-400/40 leading-tight">UNIFESP - EPM</span>
+            </div>
+            <p class="text-[11px] font-bold text-pink-300 mt-0.5 leading-none">Lactário Digital • Central de Nutrição</p>
+          </div>
+        </div>
+
+        <!-- Indicador de Conexão, Botão Desfazer e Configurações no Topo -->
+        <div class="flex items-center gap-1.5">
+          
+          <!-- Botão Global Desfazer (Undo) -->
+          <button 
+            id="btn-global-undo"
+            onclick="App.desfazerAcao()"
+            title="Desfazer a última ação realizada (edição, exclusão, alta ou suspensão)"
+            class="hidden inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-black text-rose-950 bg-rose-200 hover:bg-rose-300 border border-rose-400 transition-colors shadow-2xs animate-pulse cursor-pointer h-8"
+          >
+            ↺ Desfazer Última Alteração
+          </button>
+
+          <div id="conexao-status-badge">
+            <!-- Renderizado dinamicamente via JS -->
+          </div>
+
+          <button 
+            onclick="App.sincronizarAgora()"
+            title="Sincronizar dados com Google Sheets"
+            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-purple-100 bg-purple-950/50 hover:bg-purple-900/70 border border-purple-700/40 transition-colors shadow-2xs cursor-pointer h-8"
+          >
+            🔄 Sincronizar
+          </button>
+
+          <!-- Botão Configurações e Catálogo Reposicionado no Header -->
+          <button 
+            data-tab="config"
+            onclick="App.trocarAba('config')"
+            title="Abrir Configurações do Google Sheets e Catálogo de Fórmulas"
+            class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-extrabold text-purple-100 bg-purple-950/50 hover:bg-purple-900/70 hover:text-white border border-purple-700/40 shadow-2xs transition-colors cursor-pointer h-8"
+          >
+            ⚙️ Configurações e Catálogo
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Barra de Métricas Rápidas Compacta (py-1) -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 py-1 border-t border-purple-900/30 text-xs">
+        <div class="metric-card-hover flex items-center gap-2 bg-purple-950/30 px-2.5 py-1 rounded-md border border-purple-800/40 cursor-default">
+          <span class="text-purple-300 font-bold text-[11px]">Total Internados:</span>
+          <span id="metric-total-pacientes" class="font-extrabold text-purple-100 font-mono text-xs">0</span>
+        </div>
+        <div class="metric-card-hover flex items-center gap-2 bg-emerald-950/30 px-2.5 py-1 rounded-md border border-emerald-800/40 cursor-default">
+          <span class="text-emerald-300 font-bold text-[11px]">Dietas Ativas:</span>
+          <span id="metric-ativos" class="font-extrabold text-emerald-200 font-mono text-xs">0</span>
+        </div>
+        <div class="metric-card-hover flex items-center gap-2 bg-rose-950/30 px-2.5 py-1 rounded-md border border-rose-800/40 cursor-default">
+          <span class="text-rose-300 font-bold text-[11px]">Dietas Suspensas:</span>
+          <span id="metric-suspensos" class="font-extrabold text-rose-200 font-mono text-xs">0</span>
+        </div>
+        
+        <!-- Volume Diário Estimado com Tooltip Didático Interativo (Hover) -->
+        <div class="metric-card-hover relative group flex items-center justify-between bg-gradient-to-r from-purple-950/40 to-pink-950/40 px-2.5 py-1 rounded-md border border-pink-500/40 cursor-help">
+          <div class="flex items-center gap-1">
+            <span class="text-pink-300 font-bold text-[11px]">Volume Diário:</span>
+            <span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-pink-500/20 text-pink-200 text-[9px] font-black">ℹ️</span>
+          </div>
+          <span id="metric-volume-dia" class="font-extrabold text-pink-200 font-mono text-xs">0.0 L</span>
+
+          <div class="absolute right-0 top-full mt-1.5 hidden group-hover:block w-72 sm:w-80 p-3 bg-slate-950 text-white rounded-xl shadow-2xl border border-purple-800/80 text-xs z-50 pointer-events-none">
+            <div class="font-black text-pink-300 mb-1 flex items-center gap-1">
+              📊 Como é calculado o Volume Diário Estimado?
+            </div>
+            <p class="text-slate-300 text-[11px] leading-relaxed">
+              Representa o somatório de todo o volume líquido a ser manipulado no dia para os <strong>pacientes ativos em produção</strong>:
+            </p>
+            <div class="p-2 bg-purple-950/60 rounded border border-purple-900/60 text-[11px] font-mono text-pink-200 my-1">
+              Volume = Σ (Volume Unitário ml × Vezes ao Dia Ativas)
+            </div>
+            <p class="text-[10px] text-amber-300 font-semibold">
+              ⚠️ Pacientes suspensos ("S") ou com alta são automaticamente excluídos desta soma.
+            </p>
+            <div class="absolute right-6 bottom-full w-0 h-0 border-x-6 border-x-transparent border-b-6 border-b-slate-950"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ====================================================================
+       2. CORPO PRINCIPAL: SIDEBAR LATERAL ESQUERDA + ÁREA DE CONTEÚDO
+       ==================================================================== -->
+  <div class="flex-1 flex overflow-hidden w-full">
+
+    <!-- SIDEBAR LATERAL ESQUERDA -->
+    <aside id="sidebar-nav" class="w-52 sm:w-56 md:w-60 lg:w-64 border-r border-purple-900/40 flex flex-col justify-between p-2.5 sm:p-3 shrink-0 z-30 shadow-md select-none overflow-y-auto custom-scrollbar" style="background: linear-gradient(180deg, #240738 0%, #361050 20%, #461c64 45%, #5c3e78 72%, #75618f 100%);">
+      
+      <div class="flex flex-col gap-3">
+        <!-- BOTÃO NOVO PACIENTE ISOLADO NO TOPO DA SIDEBAR -->
+        <div class="p-1 bg-slate-950/60 backdrop-blur-xs rounded-2xl border border-purple-400/30 shadow-inner">
+          <button 
+            onclick="App.abrirModalNovoPaciente()"
+            title="Cadastrar novo paciente na relação pediátrica"
+            class="btn-novo-paciente-sidebar w-full px-3 py-3 rounded-xl text-xs font-black text-white bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2 border border-purple-300/50 cursor-pointer group"
+          >
+            <span class="text-sm transition-transform duration-200 group-hover:scale-125">➕</span>
+            <span class="tracking-wide uppercase">NOVO PACIENTE</span>
+          </button>
+        </div>
+
+        <!-- DIVISOR COM RÓTULO DE NAVEGAÇÃO (ALTO CONTRASTE) -->
+        <div class="px-2 pt-0.5 flex items-center justify-between">
+          <span class="text-[10.5px] font-black uppercase tracking-wider text-purple-100">Módulos do Sistema</span>
+          <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-purple-950/80 text-purple-100 border border-purple-400/40 font-mono">6 Abas</span>
+        </div>
+
+        <!-- LISTA DE ABAS VERTICAIS (TEXTOS NÍTIDOS E DE ALTO CONTRASTE) -->
+        <nav class="flex flex-col gap-1.5 w-full">
+          <!-- 1. PACIENTES -->
+          <button 
+            data-tab="censo"
+            onclick="App.trocarAba('censo')"
+            class="nav-tab-btn active-tab w-full px-3 py-2.5 rounded-xl text-xs font-black flex items-center gap-2.5 text-left cursor-pointer border-l-4 border-cyan-400 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 text-white shadow-lg shadow-purple-600/30"
+          >
+            <span class="text-base shrink-0">📋</span>
+            <div class="flex flex-col leading-tight min-w-0">
+              <span class="truncate text-white font-black text-xs">PACIENTES</span>
+              <span class="text-[10.5px] font-bold text-pink-100 truncate">Relação e Prescrições</span>
+            </div>
+          </button>
+
+          <!-- 2. PRODUÇÃO -->
+          <button 
+            data-tab="bancada"
+            onclick="App.trocarAba('bancada')"
+            class="nav-tab-btn w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-left text-white hover:text-white hover:bg-white/12 cursor-pointer border-l-4 border-transparent transition-all"
+          >
+            <span class="text-base shrink-0">🍼</span>
+            <div class="flex flex-col leading-tight min-w-0">
+              <span class="truncate text-white font-black text-xs">PRODUÇÃO</span>
+              <span class="text-[10.5px] font-bold text-purple-100 truncate">Bancada e Diluições</span>
+            </div>
+          </button>
+
+          <!-- 3. ETIQUETAS -->
+          <button 
+            data-tab="etiquetas"
+            onclick="App.trocarAba('etiquetas')"
+            class="nav-tab-btn w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-left text-white hover:text-white hover:bg-white/12 cursor-pointer border-l-4 border-transparent transition-all"
+          >
+            <span class="text-base shrink-0">🏷️</span>
+            <div class="flex flex-col leading-tight min-w-0">
+              <span class="truncate text-white font-black text-xs">ETIQUETAS</span>
+              <span class="text-[10.5px] font-bold text-purple-100 truncate">Térmicas Zebra ZD220</span>
+            </div>
+          </button>
+
+          <!-- 4. COMPRAS -->
+          <button 
+            data-tab="compras"
+            onclick="App.trocarAba('compras')"
+            class="nav-tab-btn w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-left text-white hover:text-white hover:bg-white/12 cursor-pointer border-l-4 border-transparent transition-all"
+          >
+            <span class="text-base shrink-0">📦</span>
+            <div class="flex flex-col leading-tight min-w-0">
+              <span class="truncate text-white font-black text-xs">COMPRAS</span>
+              <span class="text-[10.5px] font-bold text-purple-100 truncate">Previsão e Pedido</span>
+            </div>
+          </button>
+
+          <!-- 5. DASHBOARD CLÍNICO E DADOS (ABAIXO DE COMPRAS) -->
+          <button 
+            data-tab="dashboard"
+            onclick="App.trocarAba('dashboard')"
+            class="nav-tab-btn w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-left text-white hover:text-white hover:bg-white/12 cursor-pointer border-l-4 border-transparent transition-all"
+          >
+            <span class="text-base shrink-0">📈</span>
+            <div class="flex flex-col leading-tight min-w-0">
+              <span class="truncate text-white font-black text-xs">DASHBOARD</span>
+              <span class="text-[10.5px] font-bold text-purple-100 truncate">Gráficos e Indicadores</span>
+            </div>
+          </button>
+
+          <!-- 6. RELAÇÃO SPDM -->
+          <button 
+            data-tab="spdm"
+            onclick="App.trocarAba('spdm')"
+            class="nav-tab-btn w-full px-3 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 text-left text-white hover:text-white hover:bg-white/12 cursor-pointer border-l-4 border-transparent transition-all"
+          >
+            <span class="text-base shrink-0">🏢</span>
+            <div class="flex flex-col leading-tight min-w-0">
+              <span class="truncate text-white font-black text-xs">RELAÇÃO SPDM</span>
+              <span class="text-[10.5px] font-bold text-purple-100 truncate">Consolidado 47 Unidades</span>
+            </div>
+          </button>
+        </nav>
+      </div>
+
+      <!-- BASE DA SIDEBAR: CONFIGURAÇÕES E BADGE INSTITUCIONAL -->
+      <div class="pt-3 border-t border-white/20 flex flex-col gap-2">
+        <button 
+          data-tab="config"
+          onclick="App.trocarAba('config')"
+          title="Abrir Configurações do Google Sheets e Catálogos"
+          class="nav-tab-btn w-full px-3 py-2 rounded-xl text-xs font-black flex items-center gap-2 text-white hover:text-white bg-white/10 hover:bg-white/20 border border-white/20 cursor-pointer transition-all"
+        >
+          <span class="text-sm shrink-0">⚙️</span>
+          <span class="truncate">Configurações e Catálogo</span>
+        </button>
+
+        <div class="px-2.5 py-1.5 rounded-lg bg-black/30 backdrop-blur-xs border border-white/20 text-[10px] text-purple-100 flex items-center justify-between font-mono">
+          <span class="text-white font-bold">HSP • UNIFESP</span>
+          <span class="text-pink-300 font-black flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-pink-400 animate-pulse"></span>
+            v2.4
+          </span>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ====================================================================
+         3. CONTEÚDO PRINCIPAL FLEX TOTAL (SEM ROLAGEM DE JANELA)
+         ==================================================================== -->
+    <main id="main-content" class="w-full px-2 sm:px-3 py-1.5 flex-1 flex flex-col min-h-0 overflow-hidden bg-slate-100">
+
+    <!-- ================================================================
+         ABA 1: PACIENTES (PLANILHAS OFICIAIS: AUTOCLAVADA, NÃO AUTOCLAVADA, DIETA ESPECIAL E TODAS AS PLANILHAS)
+         ================================================================ -->
+    <section id="tab-censo" class="tab-section flex-1 flex flex-col min-h-0 w-full overflow-hidden">
+      
+      <!-- Zona Superior Fixa/Congelada da Aba PACIENTES (Banner Oficial + Barra de Controles e Filtros) -->
+      <div class="shrink-0 space-y-2 mb-2 z-30">
+        
+        <!-- Banner Oficial da Planilha Atual (Autoclavada, Não Autoclavada, Dieta Especial ou Todas) -->
+        <div id="censo-banner-header" class="w-full"></div>
+
+        <!-- Barra Superior Fixa de Modos de Visualização e Filtros Rápidos -->
+        <div class="bg-white/95 backdrop-blur-md border border-purple-200/80 shadow-2xs rounded-xl p-2 flex flex-wrap items-center justify-between gap-2 sticky-header-bar">
+          
+          <!-- Botões de Troca de Planilha Oficial (Autoclavada, Não Autoclavada, Dieta Especial, Todas) -->
+          <div class="flex flex-wrap items-center gap-1.5" id="censo-view-buttons">
+            <button 
+              id="btn-censo-visao-autoclavada"
+              onclick="App.setVisaoCenso('autoclavada')"
+              class="px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-xs border border-purple-500"
+            >
+              <span>🟣</span>
+              <span>AUTOCLAVADA</span>
+            </button>
+
+            <button 
+              id="btn-censo-visao-nao_autoclavada"
+              onclick="App.setVisaoCenso('nao_autoclavada')"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300"
+            >
+              <span>🟣</span>
+              <span>NÃO AUTOCLAVADA</span>
+            </button>
+
+            <button 
+              id="btn-censo-visao-dieta_especial"
+              onclick="App.setVisaoCenso('dieta_especial')"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300"
+            >
+              <span>🟡</span>
+              <span>DIETA ESPECIAL</span>
+            </button>
+
+            <button 
+              id="btn-censo-visao-todas"
+              onclick="App.setVisaoCenso('todas')"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300"
+            >
+              <span>📑</span>
+              <span>TODAS AS PLANILHAS</span>
+            </button>
+          </div>
+
+          <!-- Filtro Rápido em Tempo Real e Ações de Exportação / Impressão -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- Campo de Busca em Tempo Real -->
+            <div class="relative w-48 sm:w-64">
+              <input 
+                type="text" 
+                id="censo-busca" 
+                placeholder="Buscar Leito, RH, Paciente, Fórmula..."
+                class="w-full h-8 pl-8 pr-3 bg-purple-50/50 border border-purple-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-600 placeholder:text-slate-500"
+              />
+              <span class="absolute left-2.5 top-2 text-purple-400 text-xs">🔍</span>
+            </div>
+
+            <button 
+              id="btn-exportar-planilha-censo"
+              onclick="App.exportarPlanilhaCensoCSV()"
+              class="px-2.5 py-1.5 rounded-lg text-xs font-bold text-purple-950 bg-white hover:bg-purple-50 border border-purple-200 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+              title="Exportar relação atual em CSV"
+            >
+              <span>📄</span>
+              <span>Exportar CSV</span>
+            </button>
+            <button 
+              id="btn-imprimir-planilha-censo"
+              onclick="App.imprimirPlanilhaCensoA4()"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 border border-purple-500 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Imprimir relação selecionada em A4"
+            >
+              <span>🖨️</span>
+              <span>IMPRIMIR</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Barra Flutuante de Ações em Lote (Multi-Seleção de Pacientes) -->
+        <div id="censo-batch-action-bar" class="hidden bg-gradient-to-r from-purple-950 via-slate-900 to-purple-950 text-white rounded-xl p-2.5 shadow-md border border-purple-500/60 flex flex-wrap items-center justify-between gap-2 z-40 animate-fadeIn">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-pink-400 animate-ping inline-block"></span>
+            <span id="censo-batch-contador" class="text-xs font-black text-pink-200">0 pacientes selecionados</span>
+            <button 
+              type="button" 
+              onclick="LoteEsteiraModule.limparSelecao()" 
+              class="text-[11px] text-purple-300 hover:text-white underline cursor-pointer ml-1 font-semibold"
+            >
+              Desmarcar todos
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <button 
+              type="button"
+              onclick="LoteEsteiraModule.iniciarEsteiraEdicao()"
+              class="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white rounded-lg text-xs font-black border border-purple-400 shadow-xs flex items-center gap-1.5 cursor-pointer transition-all hover:scale-[1.02]"
+              title="Editar prescrição dos pacientes selecionados com auditoria visual 'De ➔ Para' ao final"
+            >
+              <span>✏️</span>
+              <span>Editar Selecionados</span>
+            </button>
+
+            <button 
+              type="button"
+              onclick="LoteEsteiraModule.iniciarEsteiraAlta()"
+              class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-black border border-amber-400 shadow-xs flex items-center gap-1.5 cursor-pointer transition-all hover:scale-[1.02]"
+              title="Registrar alta dos pacientes selecionados"
+            >
+              <span>🏥</span>
+              <span>Dar Alta aos Selecionados</span>
+            </button>
+
+            <button 
+              type="button"
+              onclick="LoteEsteiraModule.abrirModalExclusaoLote()"
+              class="px-3 py-1.5 bg-rose-700 hover:bg-rose-600 text-white rounded-lg text-xs font-black border border-rose-500 shadow-xs flex items-center gap-1.5 cursor-pointer transition-all hover:scale-[1.02]"
+              title="Excluir múltiplos pacientes selecionados com segurança"
+            >
+              <span>🗑️</span>
+              <span>Excluir Selecionados</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CONTAINER DE VISUALIZAÇÃO EXCLUSIVO DAS TABELAS COM ROLAGEM INDEPENDENTE -->
+      <div id="censo-planilha-view-container" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar w-full pb-4 pr-1"></div>
+
+    </section>
+
+
+    <!-- ================================================================
+         ABA 2: PRODUÇÃO (BANCADA DE PREPARO - FULL WIDTH COM CABEÇALHO CONGELADO)
+         ================================================================ -->
+    <section id="tab-bancada" class="tab-section hidden flex-1 flex flex-col min-h-0 w-full overflow-hidden">
+      
+      <!-- Zona Superior Fixa/Congelada da Bancada (Banner + Barra de Modos) -->
+      <div class="shrink-0 space-y-2 mb-2 z-30">
+        <!-- Resumo Superior da Bancada com Turnos e Botão Exclusivo de Impressão -->
+        <div class="bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white rounded-xl p-3 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 border border-purple-900/40 w-full shrink-0">
+          <div>
+            <span class="text-[10px] font-black tracking-wider uppercase text-pink-300">Mapa do Plantão • Lactário Hospital São Paulo</span>
+            <h2 class="text-base sm:text-lg font-black mt-0.5 text-white">Produção e Bancada de Preparo</h2>
+            <p class="text-xs text-purple-200">Classificação por turnos (Preparo 1: 08h-18h • Preparo 2: 20h-06h), pesagem analítica e diluição.</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <div class="flex flex-wrap gap-2 bg-purple-950/60 px-3 py-1.5 rounded-lg border border-purple-800/60">
+              <div class="text-center px-1">
+                <div class="text-[10px] sm:text-[11px] uppercase font-extrabold text-purple-300">Prep 1 (08h-18h)</div>
+                <div id="bancada-total-prep1" class="text-xs sm:text-sm font-black font-mono text-purple-200">0.00 L</div>
+              </div>
+              <div class="w-px bg-purple-800/60"></div>
+              <div class="text-center px-1">
+                <div class="text-[10px] sm:text-[11px] uppercase font-extrabold text-pink-300">Prep 2 (20h-06h)</div>
+                <div id="bancada-total-prep2" class="text-xs sm:text-sm font-black font-mono text-pink-200">0.00 L</div>
+              </div>
+              <div class="w-px bg-purple-800/60"></div>
+              <div class="text-center px-1">
+                <div class="text-[10px] sm:text-[11px] uppercase font-extrabold text-white">Volume Total</div>
+                <div id="bancada-total-litros" class="text-xs sm:text-sm font-black font-mono text-white">0.00 L</div>
+              </div>
+              <div class="w-px bg-purple-800/60"></div>
+              <div class="text-center px-1">
+                <div class="text-[10px] sm:text-[11px] uppercase font-extrabold text-emerald-300">Pó Total</div>
+                <div id="bancada-total-po" class="text-xs sm:text-sm font-black font-mono text-emerald-300">0.00 kg</div>
+              </div>
+              <div class="w-px bg-purple-800/60"></div>
+              <div class="text-center px-1">
+                <div class="text-[10px] sm:text-[11px] uppercase font-extrabold text-amber-300">Frascos / Dia</div>
+                <div id="bancada-total-frascos" class="text-xs sm:text-sm font-black font-mono text-amber-300">0 un</div>
+              </div>
+            </div>
+
+            <button 
+              onclick="App.imprimirBancadaAtual()"
+              class="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center gap-1.5 border border-purple-400 cursor-pointer"
+              title="Imprimir visualização de produção selecionada"
+            >
+              <span>🖨️</span>
+              <span>IMPRIMIR</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Barra de Seleção de Visualizações da Produção e Somas do Excel -->
+        <div class="bg-white/95 backdrop-blur-md border border-purple-200/80 shadow-2xs rounded-xl p-1.5 flex flex-wrap items-center justify-between gap-2 shrink-0">
+          <div class="flex flex-wrap items-center gap-1.5" id="bancada-view-buttons">
+            <button 
+              onclick="BancadaModule.setVisao('bancada')"
+              id="btn-visao-bancada"
+              class="px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-xs border border-purple-500"
+            >
+              <span>🍼</span>
+              <span>Mapa de Bancada</span>
+            </button>
+
+            <button 
+              onclick="BancadaModule.setVisao('soma_autoclavada')"
+              id="btn-visao-soma_autoclavada"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300"
+            >
+              <span>🔵</span>
+              <span>SOMA AUTOCLAVADA</span>
+            </button>
+
+            <button 
+              onclick="BancadaModule.setVisao('soma_nao_autoclavada')"
+              id="btn-visao-soma_nao_autoclavada"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300"
+            >
+              <span>🟣</span>
+              <span>SOMA NÃO AUTOCLAVADA</span>
+            </button>
+
+            <button 
+              onclick="BancadaModule.setVisao('soma_enteral')"
+              id="btn-visao-soma_enteral"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300"
+            >
+              <span>🟢</span>
+              <span>SOMA ENTERAL</span>
+            </button>
+
+            <button 
+              onclick="BancadaModule.setVisao('todas_somas')"
+              id="btn-visao-todas_somas"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300"
+            >
+              <span>📑</span>
+              <span>TODAS AS SOMAS</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button 
+              onclick="App.imprimirBancadaAtual()"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 border border-purple-500 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Imprimir visualização atual em folha A4"
+            >
+              <span>🖨️</span>
+              <span>IMPRIMIR</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Container dos Cards por Categoria ou Planilhas de Soma com Rolagem Independente -->
+      <div id="bancada-cards-container" class="flex-1 min-h-0 overflow-y-auto custom-scrollbar w-full pb-4 pr-1"></div>
+
+    </section>
+
+
+    <!-- ================================================================
+         ABA 5: RELAÇÃO CONSOLIDADA PARA SPDM (FULL WIDTH COM CABEÇALHO CONGELADO)
+         ================================================================ -->
+    <section id="tab-spdm" class="tab-section hidden flex-1 flex flex-col min-h-0 w-full overflow-hidden">
+      <!-- Conteúdo renderizado dinamicamente por SpdmModule.renderizarAba() -->
+    </section>
+
+
+    <!-- ================================================================
+         ABA 4: ETIQUETAS (COM CABEÇALHOS E FILTROS CONGELADOS)
+         ================================================================ -->
+    <section id="tab-etiquetas" class="tab-section hidden flex-1 flex flex-col min-h-0 w-full overflow-hidden">
+      
+      <!-- Zona Superior Fixa/Congelada da Central de Etiquetas -->
+      <div class="shrink-0 space-y-2 mb-2 z-30">
+        <!-- Resumo Superior da Central de Etiquetas (Banner Harmonizado) -->
+        <div class="bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white rounded-xl p-3 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 border border-purple-900/40 w-full shrink-0">
+          <div>
+            <span class="text-[10px] font-black tracking-wider uppercase text-pink-300">Emissão Térmica • Padrão Zebra ZD230 (100mm × 45mm / 203 DPI)</span>
+            <h2 class="text-base sm:text-lg font-black mt-0.5 text-white flex items-center gap-2 flex-wrap">
+              <span>🏷️ Central de Etiquetas</span>
+              <span id="etiquetas-contador-badge" class="px-2.5 py-0.5 text-xs font-black bg-pink-900/60 text-pink-200 rounded-full border border-pink-500/50 font-mono">0 ativas</span>
+              <span id="etiquetas-status-impressora" class="px-2.5 py-0.5 text-xs font-black bg-purple-900/70 text-purple-200 rounded-full border border-purple-400/40 inline-flex items-center gap-1 font-mono">
+                <span id="etiquetas-status-dot">🔌</span>
+                <span id="etiquetas-status-txt">Detectando Zebra...</span>
+              </span>
+            </h2>
+            <p class="text-xs text-purple-200">Motor ZPL II nativo de 1-clique para Zebra ZD230 com fallback suave para diálogo do navegador.</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button 
+              type="button"
+              onclick="App.imprimirTesteZebra()"
+              class="px-3 py-2 bg-slate-800/80 hover:bg-slate-700 text-purple-200 font-bold text-xs rounded-lg shadow-sm transition-all flex items-center gap-1.5 border border-purple-500/40 cursor-pointer"
+              title="Imprime 1 etiqueta de teste na Zebra ZD230 para calibrar o sensor de GAP"
+            >
+              <span>🧪</span>
+              <span>TESTE ZPL (100×45)</span>
+            </button>
+            <button 
+              type="button"
+              onclick="App.imprimirEtiquetasSelecionadas()"
+              class="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center gap-1.5 border border-purple-400 cursor-pointer"
+              title="Imprimir etiquetas dos pacientes selecionados"
+            >
+              <span>🏷️</span>
+              <span>IMPRIMIR SELECIONADAS</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Controles de Impressão e Filtros -->
+        <div class="bg-white rounded-xl border border-purple-200/80 shadow-2xs p-3 w-full shrink-0 flex flex-col gap-2">
+          
+          <!-- Barra de Busca e Filtros Avançados -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
+            
+            <div class="md:col-span-2">
+              <label class="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">Buscar Paciente / Leito / RH:</label>
+              <input 
+                type="text" 
+                id="etiquetas-busca" 
+                placeholder="Digite leito, RH ou nome..." 
+                oninput="App.filtrarEtiquetas()"
+                class="w-full bg-slate-50 border border-purple-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">Enfermaria:</label>
+              <select 
+                id="etiquetas-filtro-enfermaria" 
+                onchange="App.filtrarEtiquetas()"
+                class="w-full bg-slate-50 border border-purple-200 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white cursor-pointer"
+              >
+                <option value="TODAS">Todas as Enfermarias</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">Categoria:</label>
+              <select 
+                id="etiquetas-filtro-categoria" 
+                onchange="App.filtrarEtiquetas()"
+                class="w-full bg-slate-50 border border-purple-200 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white cursor-pointer"
+              >
+                <option value="TODAS">Todas as Categorias</option>
+                <option value="AUTOCLAVADA_P1">Autoclavadas P1</option>
+                <option value="AUTOCLAVADA_P2">Autoclavadas P2</option>
+                <option value="NAO_AUTOCLAVADA">Não Autoclavadas</option>
+                <option value="ESPECIAIS">Especiais</option>
+                <option value="JEJUM">Abreviação Jejum</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-slate-700 uppercase mb-0.5">Dispositivo:</label>
+              <select 
+                id="etiquetas-filtro-dispositivo" 
+                onchange="App.filtrarEtiquetas()"
+                class="w-full bg-slate-50 border border-purple-200 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white cursor-pointer"
+              >
+                <option value="TODOS">Todos os Dispositivos</option>
+                <option value="Mamadeira">Mamadeira</option>
+                <option value="Frasco Enteral">Frasco Enteral</option>
+                <option value="Frasco V.O">Frasco V.O</option>
+                <option value="Chuca sem bico">Chuca sem bico</option>
+                <option value="Copo">Copo</option>
+                <option value="Seringa">Seringa</option>
+                <option value="Equipo Roxo">Equipo Roxo</option>
+              </select>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Área de Conteúdo Rolável das Etiquetas (Amostra + Tabela com Sticky Thead) -->
+      <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar w-full pb-4 pr-1 space-y-2.5">
+        
+        <!-- Grid com Pré-visualização Visual das Etiquetas -->
+        <div class="w-full shrink-0">
+          <div class="flex justify-between items-center mb-1.5">
+            <h3 class="text-xs font-black text-purple-950 uppercase tracking-wider">Amostra Visual Térmica (Modelo HSP)</h3>
+            <span class="text-xs font-bold text-purple-800">Exibindo os primeiros leitos filtrados</span>
+          </div>
+          <div id="etiquetas-preview-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 w-full"></div>
+        </div>
+
+        <!-- Tabela de Seleção para Impressão em Lote com Sticky Thead -->
+        <div class="bg-white rounded-xl border border-purple-200/80 shadow-2xs overflow-hidden w-full" style="border-top: 4px solid #6b21a8;">
+          <div class="p-3 bg-purple-50/70 border-b border-purple-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-black text-purple-950">
+                Selecione os leitos para impressão: (<span id="etiquetas-contador-selecionadas" class="text-purple-900 font-extrabold">0</span> selecionados)
+              </span>
+              <div class="space-x-2 text-xs">
+                <button onclick="App.alternarSelecionarTodasEtiquetas(true)" class="font-bold text-purple-700 hover:text-purple-900 hover:underline cursor-pointer">Marcar Todos</button>
+                <span class="text-purple-300">•</span>
+                <button onclick="App.alternarSelecionarTodasEtiquetas(false)" class="font-bold text-slate-600 hover:text-slate-900 hover:underline cursor-pointer">Desmarcar Todos</button>
+              </div>
+            </div>
+            <button 
+              onclick="App.imprimirEtiquetasSelecionadas()" 
+              id="btn-imprimir-selecionadas-etiquetas"
+              class="px-4 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white font-black text-xs rounded-lg shadow-sm border border-purple-400 transition-all flex items-center gap-1.5 cursor-pointer"
+              title="Imprimir etiquetas dos pacientes selecionados"
+            >
+              <span>🖨️</span>
+              <span>IMPRIMIR SELECIONADAS</span>
+            </button>
+          </div>
+
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left border-collapse min-w-full">
+              <thead class="sticky top-0 z-20 bg-purple-50/95 backdrop-blur-xs shadow-2xs">
+                <tr class="bg-purple-50/80 text-[10.5px] font-bold text-purple-950 uppercase border-b border-purple-200">
+                  <th class="py-2.5 px-2 text-center w-12 select-none" title="Marcar / Desmarcar todas as linhas">
+                    <div class="flex items-center justify-center">
+                      <input 
+                        type="checkbox" 
+                        id="etiquetas-check-todos-header"
+                        class="rounded text-purple-600 h-4 w-4 cursor-pointer align-middle accent-purple-600"
+                        onchange="App.alternarMarcarTodasEtiquetasHeader(this.checked)"
+                        checked
+                      />
+                    </div>
+                  </th>
+                  <th class="py-2.5 px-2.5 text-center">Leito</th>
+                  <th class="py-2.5 px-2.5 text-center">RH</th>
+                  <th class="py-2.5 px-2.5">Paciente</th>
+                  <th class="py-2.5 px-2.5 text-center">Enfermaria</th>
+                  <th class="py-2.5 px-2.5 text-center">Dieta Prescrita</th>
+                  <th class="py-2.5 px-2.5 text-center">Volume</th>
+                  <th class="py-2.5 px-2.5 text-center">Freq. (Frascos)</th>
+                  <th class="py-2.5 px-2.5">Horários Ativos</th>
+                  <th class="py-2.5 px-2.5 text-center">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="etiquetas-selecao-corpo" class="divide-y divide-purple-100 text-xs bg-white text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================================
+         ABA 5: COMPRAS e PEDIDO OFICIAL (FULL WIDTH COM CABEÇALHO CONGELADO)
+         ================================================================ -->
+    <section id="tab-compras" class="tab-section hidden flex-1 flex flex-col min-h-0 w-full overflow-hidden">
+      <!-- Conteúdo renderizado dinamicamente por ComprasModule.renderizarAba() -->
+    </section>
+
+
+    <!-- ================================================================
+         ABA 6: DASHBOARD CLÍNICO E DADOS (COM CABEÇALHO E KPIS CONGELADOS)
+         ================================================================ -->
+    <section id="tab-dashboard" class="tab-section hidden flex-1 flex flex-col min-h-0 w-full overflow-hidden">
+      
+      <!-- Zona Superior Fixa/Congelada do Dashboard (Banner + 4 KPIs) -->
+      <div class="shrink-0 space-y-2 mb-2 z-30">
+        <!-- Banner Executivo do Dashboard -->
+        <div class="bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white rounded-xl p-3.5 shadow-sm border border-purple-900/40 w-full flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <div class="text-[10px] uppercase font-black tracking-wider text-pink-300">PANORAMA CLÍNICO E OPERACIONAL • HOSPITAL SÃO PAULO</div>
+            <h2 class="text-sm sm:text-base font-black tracking-wide text-white mt-0.5 flex items-center gap-2">
+              <span>📈 Painel Executivo de Nutrição e Lactário</span>
+            </h2>
+            <p class="text-xs text-purple-200 mt-0.5">Visão consolidada do censo de pacientes, volumes em litros, picos de produção e distribuição por unidades.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-xs font-bold">
+            <button 
+              type="button" 
+              onclick="App.trocarAba('censo')" 
+              class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white font-black transition-all shadow-sm border border-purple-400 cursor-pointer flex items-center gap-1.5"
+            >
+              <span>📋</span>
+              <span>Ver Relação de Pacientes</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Grid de 4 Cards de Panorama Visual -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div id="dash-card-pacientes" class="bg-white p-3.5 rounded-2xl border border-purple-200 shadow-2xs"></div>
+          <div id="dash-card-volume" class="bg-white p-3.5 rounded-2xl border border-fuchsia-200 shadow-2xs"></div>
+          <div id="dash-card-top-dieta" class="bg-white p-3.5 rounded-2xl border border-pink-200 shadow-2xs"></div>
+          <div id="dash-card-top-enfermaria" class="bg-white p-3.5 rounded-2xl border border-purple-200 shadow-2xs"></div>
+        </div>
+      </div>
+
+      <!-- Área de Conteúdo Rolável do Dashboard (Gráficos e Detalhes) -->
+      <div class="flex-1 min-h-0 overflow-y-auto custom-scrollbar w-full pb-4 pr-1 space-y-3.5">
+        
+        <!-- Grid Principal de Gráficos e Distribuições (2 Colunas) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+          
+          <!-- Painel 1: Distribuição por Categorias de Dietas -->
+          <div class="bg-white p-4 rounded-2xl border border-purple-200 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between border-b border-purple-100 pb-2.5">
+              <div>
+                <span class="text-[10px] uppercase font-black tracking-wider text-purple-700">DISTRIBUIÇÃO DE DIETAS</span>
+                <h3 class="text-xs sm:text-sm font-black text-purple-950">🥛 Produção por Categoria</h3>
+              </div>
+              <span class="text-[10.5px] font-bold text-slate-500 font-mono">Volume Diário (L)</span>
+            </div>
+            <div id="dash-painel-categorias" class="space-y-3 pt-1"></div>
+          </div>
+
+          <!-- Painel 2: Picos de Horários de Preparo -->
+          <div class="bg-white p-4 rounded-2xl border border-purple-200 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between border-b border-purple-100 pb-2.5">
+              <div>
+                <span class="text-[10px] uppercase font-black tracking-wider text-purple-700">ESCALA DIÁRIA (8 HORÁRIOS)</span>
+                <h3 class="text-xs sm:text-sm font-black text-purple-950">⏰ Picos de Produção por Horário</h3>
+              </div>
+              <span class="text-[10.5px] font-bold text-purple-900 bg-purple-100 px-2 py-0.5 rounded border border-purple-200 font-mono">Total Frascos</span>
+            </div>
+            <div id="dash-painel-horarios" class="flex gap-1.5 items-end justify-between pt-1 overflow-x-auto"></div>
+          </div>
+
+          <!-- Painel 3: Demanda por Enfermarias -->
+          <div class="bg-white p-4 rounded-2xl border border-purple-200 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between border-b border-purple-100 pb-2.5">
+              <div>
+                <span class="text-[10px] uppercase font-black tracking-wider text-purple-700">UNIDADES HOSPITALARES</span>
+                <h3 class="text-xs sm:text-sm font-black text-purple-950">🏥 Principais Enfermarias em Demanda</h3>
+              </div>
+              <span class="text-[10.5px] font-bold text-slate-500 font-mono">Top 5 Unidades</span>
+            </div>
+            <div id="dash-painel-enfermarias" class="space-y-2.5 pt-1"></div>
+          </div>
+
+          <!-- Painel 4: Vias e Dispositivos -->
+          <div class="bg-white p-4 rounded-2xl border border-purple-200 shadow-2xs space-y-3">
+            <div class="flex items-center justify-between border-b border-purple-100 pb-2.5">
+              <div>
+                <span class="text-[10px] uppercase font-black tracking-wider text-purple-700">ADMINISTRAÇÃO E MATERIAIS</span>
+                <h3 class="text-xs sm:text-sm font-black text-purple-950">🍼 Vias de Acesso e Dispositivos</h3>
+              </div>
+              <span class="text-[10.5px] font-bold text-slate-500">Pacientes Ativos</span>
+            </div>
+            <div id="dash-painel-vias" class="pt-1"></div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ================================================================
+         ABA 5: CONFIGURAÇÕES e CATÁLOGO (FULL WIDTH e SCROLLABLE)
+         ================================================================ -->
+    <section id="tab-config" class="tab-section hidden flex-1 flex flex-col min-h-0 w-full overflow-y-auto custom-scrollbar pr-1 pb-4 gap-3">
+      
+      <!-- CARD 1: DADOS DO(A) NUTRICIONISTA RESPONSÁVEL -->
+      <div class="bg-white rounded-xl border border-purple-200/80 shadow-2xs p-4 w-full shrink-0" style="border-top: 4px solid #6b21a8;">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-2.5 border-b border-purple-100">
+          <div>
+            <span class="text-[10px] font-black tracking-wider uppercase text-purple-700">Identificação Técnica e Assinatura</span>
+            <h3 class="text-sm sm:text-base font-black text-purple-950 flex items-center gap-1.5">
+              <span>🧑‍⚕️</span>
+              <span>Nutricionista Responsável pelo Plantão / Lactário</span>
+            </h3>
+            <p class="text-xs text-purple-800/80 font-medium mt-0.5 leading-relaxed">
+              Estes dados serão incluídos automaticamente no cabeçalho e no rodapé de assinatura de todos os relatórios e planilhas impressos (A4).
+            </p>
+          </div>
+          <span class="px-2.5 py-1 text-[11px] font-mono font-bold bg-purple-100 text-purple-900 rounded-lg border border-purple-300">
+            Impressão A4 Oficial
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mt-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome Completo do(a) Nutricionista *</label>
+            <input 
+              type="text" 
+              id="config-nutri-nome" 
+              placeholder="Ex: Dra. Mariana Lima Santos"
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none placeholder:text-slate-400"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Registro Profissional (CRN) *</label>
+            <input 
+              type="text" 
+              id="config-nutri-crn" 
+              placeholder="Ex: CRN-3 48190/SP"
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none placeholder:text-slate-400"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Turno / Plantão / Setor</label>
+            <input 
+              type="text" 
+              id="config-nutri-setor" 
+              placeholder="Ex: Plantão Diurno • Lactário Central"
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none placeholder:text-slate-400"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Ramal / Contato</label>
+            <input 
+              type="text" 
+              id="config-nutri-ramal" 
+              placeholder="Ex: Ramal 5421"
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-mono font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none placeholder:text-slate-400"
+            />
+          </div>
+        </div>
+
+        <div class="mt-3.5 pt-3 border-t border-purple-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <!-- Prévia Visual da Assinatura Técnica -->
+          <div class="text-[11px] text-purple-900 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200 flex items-center gap-2 font-mono">
+            <span class="text-purple-600">Prévia no Relatório:</span>
+            <span id="config-nutri-preview" class="font-bold text-purple-950">Nutricionista Responsável: Não configurado</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button 
+              type="button" 
+              onclick="App.limparDadosNutricionista()" 
+              class="px-3 py-1.5 rounded-lg text-xs font-bold text-purple-950 bg-white hover:bg-purple-50 border border-purple-200 transition-all cursor-pointer shadow-2xs"
+            >
+              Limpar
+            </button>
+            <button 
+              type="button" 
+              onclick="App.salvarDadosNutricionista()" 
+              class="px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 border border-purple-400 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+            >
+              <span>💾</span>
+              <span>Salvar Dados do Nutricionista</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: GERENCIAMENTO DE CATÁLOGOS E LISTAS MESTRES -->
+      <div class="bg-white rounded-xl border border-purple-200/80 shadow-2xs overflow-hidden w-full shrink-0" style="border-top: 4px solid #86198f;">
+        
+        <!-- Cabeçalho do Card Master com Seletor de Sub-Abas -->
+        <div class="p-3.5 bg-purple-50/70 border-b border-purple-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-2.5">
+          <div>
+            <div class="text-[10px] font-black tracking-wider uppercase text-purple-700">Hospital São Paulo • Parâmetros e Catálogos Mestres</div>
+            <h3 class="text-sm sm:text-base font-black text-purple-950 flex items-center gap-1.5">
+              <span>📚</span>
+              <span>Catálogos e Listas de Referência do Lactário</span>
+            </h3>
+            <p class="text-xs text-purple-800/80 font-medium mt-0.5">
+              Gerencie, adicione, altere e exclua as listas de enfermarias, dietas/fórmulas, intervalos, vias e dispositivos do sistema.
+            </p>
+          </div>
+        </div>
+
+        <!-- Barra de Navegação por Sub-Abas dos Catálogos -->
+        <div class="bg-white border-b border-purple-100 p-2 flex flex-wrap gap-1.5 overflow-x-auto">
+          <button 
+            type="button" 
+            id="subtab-btn-enfermarias" 
+            onclick="App.alternarSubAbaConfig('enfermarias')"
+            class="px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-xs border border-purple-500 flex items-center gap-1.5"
+          >
+            <span>🏥</span>
+            <span>Enfermarias e Unidades</span>
+          </button>
+
+          <button 
+            type="button" 
+            id="subtab-btn-formulas" 
+            onclick="App.alternarSubAbaConfig('formulas')"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300 flex items-center gap-1.5"
+          >
+            <span>⚖️</span>
+            <span>Dietas e Fórmulas</span>
+          </button>
+
+          <button 
+            type="button" 
+            id="subtab-btn-intervalos" 
+            onclick="App.alternarSubAbaConfig('intervalos')"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300 flex items-center gap-1.5"
+          >
+            <span>⏰</span>
+            <span>Intervalos de Dietas</span>
+          </button>
+
+          <button 
+            type="button" 
+            id="subtab-btn-vias" 
+            onclick="App.alternarSubAbaConfig('vias')"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300 flex items-center gap-1.5"
+          >
+            <span>💉</span>
+            <span>Vias de Administração</span>
+          </button>
+
+          <button 
+            type="button" 
+            id="subtab-btn-dispositivos" 
+            onclick="App.alternarSubAbaConfig('dispositivos')"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300 flex items-center gap-1.5"
+          >
+            <span>🍼</span>
+            <span>Dispositivos de Envase</span>
+          </button>
+
+          <button 
+            type="button" 
+            id="subtab-btn-versoes" 
+            onclick="App.alternarSubAbaConfig('versoes')"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300 flex items-center gap-1.5"
+          >
+            <span>📑</span>
+            <span>Versões e Restauração</span>
+          </button>
+
+          <button 
+            type="button" 
+            id="subtab-btn-auditoria" 
+            onclick="App.alternarSubAbaConfig('auditoria')"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300 flex items-center gap-1.5"
+          >
+            <span>📜</span>
+            <span>Histórico de alterações</span>
+          </button>
+
+          <button 
+            type="button" 
+            id="subtab-btn-sheets" 
+            onclick="App.alternarSubAbaConfig('sheets')"
+            class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer bg-purple-50/70 hover:bg-purple-100 text-purple-950 border border-purple-200/80 hover:border-purple-300 flex items-center gap-1.5"
+          >
+            <span>📊</span>
+            <span>Conexão Google Sheets</span>
+          </button>
+        </div>
+
+        <!-- ==============================================================
+             SUB-PAINEL 1: ENFERMARIAS e UNIDADES
+             ============================================================== -->
+        <div id="config-painel-enfermarias" class="config-subpainel p-0">
+          <div class="p-3 bg-white border-b border-purple-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+            <div class="flex-1 relative">
+              <input 
+                type="text" 
+                id="config-busca-enfermaria" 
+                placeholder="Buscar enfermaria por nome, sigla, andar ou faixa de leitos..." 
+                oninput="App.filtrarEnfermarias()"
+                class="w-full h-8 pl-8 pr-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none placeholder:text-slate-400"
+              />
+              <span class="absolute left-2.5 top-2 text-xs text-purple-400">🔍</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span id="config-contador-enfermarias" class="text-xs font-bold text-purple-950 bg-purple-100 border border-purple-300 px-2.5 py-1 rounded-full font-mono">
+                9 unidades
+              </span>
+              <button 
+                onclick="App.abrirModalEnfermaria()"
+                class="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white rounded-lg text-xs font-bold border border-purple-400 transition-all flex items-center gap-1 cursor-pointer shadow-xs"
+              >
+                <span>➕</span>
+                <span>Nova Enfermaria</span>
+              </button>
+              <button 
+                onclick="App.restaurarEnfermariasPadrao()"
+                class="px-3 py-1.5 bg-white hover:bg-purple-50 text-purple-950 rounded-lg text-xs font-bold border border-purple-200 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                title="Restaurar enfermarias padrão do HSP"
+              >
+                <span>🔄</span>
+                <span>Restaurar Padrão</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left border-collapse min-w-full">
+              <thead>
+                <tr class="bg-purple-50/80 text-[10.5px] font-bold text-purple-950 uppercase border-b border-purple-200">
+                  <th class="py-2.5 px-3">Sigla / Código</th>
+                  <th class="py-2.5 px-3">Nome da Unidade / Enfermaria</th>
+                  <th class="py-2.5 px-3">Localização (Andar / Bloco)</th>
+                  <th class="py-2.5 px-3">Faixa de Leitos</th>
+                  <th class="py-2.5 px-2.5 text-center">Total Leitos</th>
+                  <th class="py-2.5 px-3 text-center w-24">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-config-enfermarias-corpo" class="divide-y divide-purple-100 text-xs bg-white text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             SUB-PAINEL 2: DIETAS e FÓRMULAS PRESCRITAS (CONCENTRAÇÕES E MEDIDAS)
+             ============================================================== -->
+        <div id="config-painel-formulas" class="config-subpainel hidden p-0">
+          <div class="p-3 bg-white border-b border-purple-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+            <div class="flex-1 relative">
+              <input 
+                type="text" 
+                id="config-busca-formula" 
+                placeholder="Buscar por nome do produto, fórmula ou diluição (ex: Nan, Pregomin, 1:25)..." 
+                oninput="App.filtrarCatalogo()"
+                class="w-full h-8 pl-8 pr-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none placeholder:text-slate-400"
+              />
+              <span class="absolute left-2.5 top-2 text-xs text-purple-400">🔍</span>
+            </div>
+
+            <div class="w-full sm:w-56">
+              <select 
+                id="config-filtro-categoria-formula" 
+                onchange="App.filtrarCatalogo()"
+                class="w-full h-8 px-2.5 bg-slate-50 border border-purple-200 rounded-lg text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none cursor-pointer"
+              >
+                <option value="TODAS">Todas as Categorias</option>
+                <option value="AUTOCLAVADA_P1">Autoclavadas - Preparo 1</option>
+                <option value="AUTOCLAVADA_P2">Autoclavadas - Preparo 2</option>
+                <option value="NAO_AUTOCLAVADA">Não Autoclavadas (Bancada Estéril)</option>
+                <option value="ESPECIAIS">Dietas Especiais</option>
+                <option value="JEJUM">Abreviação de Jejum</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span id="config-contador-formulas" class="text-xs font-bold text-purple-950 bg-purple-100 border border-purple-300 px-2.5 py-1 rounded-full font-mono">
+                30 fórmulas
+              </span>
+              <button 
+                onclick="App.abrirModalFormula()"
+                class="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white rounded-lg text-xs font-bold border border-purple-400 transition-all flex items-center gap-1 cursor-pointer shadow-xs"
+              >
+                <span>➕</span>
+                <span>Nova Fórmula</span>
+              </button>
+              <button 
+                onclick="App.restaurarCatalogoPadrao()"
+                class="px-3 py-1.5 bg-white hover:bg-purple-50 text-purple-950 rounded-lg text-xs font-bold border border-purple-200 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                title="Restaurar tabela original do Excel"
+              >
+                <span>🔄</span>
+                <span>Restaurar Padrão</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left border-collapse min-w-full">
+              <thead>
+                <tr class="bg-purple-50/80 text-[10.5px] font-bold text-purple-950 uppercase border-b border-purple-200">
+                  <th class="py-2.5 px-3">Produto / Fórmula</th>
+                  <th class="py-2.5 px-2.5 text-center">Categoria</th>
+                  <th class="py-2.5 px-2.5 text-center">Porcentagem</th>
+                  <th class="py-2.5 px-2.5 text-center">Pó (g) / 100ml</th>
+                  <th class="py-2.5 px-2.5 text-center">Água (ml) / 100ml</th>
+                  <th class="py-2.5 px-2.5 text-center">Colher Medida</th>
+                  <th class="py-2.5 px-2.5 text-center">Lata (g)</th>
+                  <th class="py-2.5 px-3">Preparo / Bancada</th>
+                  <th class="py-2.5 px-3 text-center w-24">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-config-dietas-corpo" class="divide-y divide-purple-100 text-xs bg-white text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             SUB-PAINEL 3: INTERVALOS ENTRE DIETAS
+             ============================================================== -->
+        <div id="config-painel-intervalos" class="config-subpainel hidden p-0">
+          <div class="p-3 bg-white border-b border-purple-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+            <div class="flex-1 relative">
+              <input 
+                type="text" 
+                id="config-busca-intervalo" 
+                placeholder="Buscar intervalo por horas ou descrição..." 
+                oninput="App.filtrarIntervalos()"
+                class="w-full h-8 pl-8 pr-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none placeholder:text-slate-400"
+              />
+              <span class="absolute left-2.5 top-2 text-xs text-purple-400">🔍</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span id="config-contador-intervalos" class="text-xs font-bold text-purple-950 bg-purple-100 border border-purple-300 px-2.5 py-1 rounded-full font-mono">
+                3 intervalos
+              </span>
+              <button 
+                onclick="App.abrirModalIntervalo()"
+                class="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white rounded-lg text-xs font-bold border border-purple-400 transition-all flex items-center gap-1 cursor-pointer shadow-xs"
+              >
+                <span>➕</span>
+                <span>Novo Intervalo</span>
+              </button>
+              <button 
+                onclick="App.restaurarIntervalosPadrao()"
+                class="px-3 py-1.5 bg-white hover:bg-purple-50 text-purple-950 rounded-lg text-xs font-bold border border-purple-200 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                title="Restaurar intervalos padrão"
+              >
+                <span>🔄</span>
+                <span>Restaurar Padrão</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left border-collapse min-w-full">
+              <thead>
+                <tr class="bg-purple-50/80 text-[10.5px] font-bold text-purple-950 uppercase border-b border-purple-200">
+                  <th class="py-2.5 px-3 text-center w-28">Intervalo</th>
+                  <th class="py-2.5 px-3">Descrição na Prescrição</th>
+                  <th class="py-2.5 px-3 text-center w-32">Refeições / Dia</th>
+                  <th class="py-2.5 px-3">Exemplo de Horários Gerados</th>
+                  <th class="py-2.5 px-3 text-center w-24">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-config-intervalos-corpo" class="divide-y divide-purple-100 text-xs bg-white text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             SUB-PAINEL 4: VIAS DE ADMINISTRAÇÃO
+             ============================================================== -->
+        <div id="config-painel-vias" class="config-subpainel hidden p-0">
+          <div class="p-3 bg-white border-b border-purple-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+            <div class="flex-1 relative">
+              <input 
+                type="text" 
+                id="config-busca-via" 
+                placeholder="Buscar via de administração..." 
+                oninput="App.filtrarVias()"
+                class="w-full h-8 pl-8 pr-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none placeholder:text-slate-400"
+              />
+              <span class="absolute left-2.5 top-2 text-xs text-purple-400">🔍</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span id="config-contador-vias" class="text-xs font-bold text-purple-950 bg-purple-100 border border-purple-300 px-2.5 py-1 rounded-full font-mono">
+                5 vias
+              </span>
+              <button 
+                onclick="App.abrirModalVia()"
+                class="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white rounded-lg text-xs font-bold border border-purple-400 transition-all flex items-center gap-1 cursor-pointer shadow-xs"
+              >
+                <span>➕</span>
+                <span>Nova Via</span>
+              </button>
+              <button 
+                onclick="App.restaurarViasPadrao()"
+                class="px-3 py-1.5 bg-white hover:bg-purple-50 text-purple-950 rounded-lg text-xs font-bold border border-purple-200 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                title="Restaurar vias padrão"
+              >
+                <span>🔄</span>
+                <span>Restaurar Padrão</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left border-collapse min-w-full">
+              <thead>
+                <tr class="bg-purple-50/80 text-[10.5px] font-bold text-purple-950 uppercase border-b border-purple-200">
+                  <th class="py-2.5 px-3">Nome da Via de Administração</th>
+                  <th class="py-2.5 px-3">Classificação Clínica</th>
+                  <th class="py-2.5 px-3 text-center w-24">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-config-vias-corpo" class="divide-y divide-purple-100 text-xs bg-white text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             SUB-PAINEL 5: DISPOSITIVOS DE ENVASE
+             ============================================================== -->
+        <div id="config-painel-dispositivos" class="config-subpainel hidden p-0">
+          <div class="p-3 bg-white border-b border-purple-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+            <div class="flex-1 relative">
+              <input 
+                type="text" 
+                id="config-busca-dispositivo" 
+                placeholder="Buscar dispositivo de envase..." 
+                oninput="App.filtrarDispositivos()"
+                class="w-full h-8 pl-8 pr-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none placeholder:text-slate-400"
+              />
+              <span class="absolute left-2.5 top-2 text-xs text-purple-400">🔍</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span id="config-contador-dispositivos" class="text-xs font-bold text-purple-950 bg-purple-100 border border-purple-300 px-2.5 py-1 rounded-full font-mono">
+                7 dispositivos
+              </span>
+              <button 
+                onclick="App.abrirModalDispositivo()"
+                class="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white rounded-lg text-xs font-bold border border-purple-400 transition-all flex items-center gap-1 cursor-pointer shadow-xs"
+              >
+                <span>➕</span>
+                <span>Novo Dispositivo</span>
+              </button>
+              <button 
+                onclick="App.restaurarDispositivosPadrao()"
+                class="px-3 py-1.5 bg-white hover:bg-purple-50 text-purple-950 rounded-lg text-xs font-bold border border-purple-200 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                title="Restaurar dispositivos padrão"
+              >
+                <span>🔄</span>
+                <span>Restaurar Padrão</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left border-collapse min-w-full">
+              <thead>
+                <tr class="bg-purple-50/80 text-[10.5px] font-bold text-purple-950 uppercase border-b border-purple-200">
+                  <th class="py-2.5 px-3">Dispositivo de Envase</th>
+                  <th class="py-2.5 px-3">Tipo / Uso Operacional</th>
+                  <th class="py-2.5 px-3 text-center w-24">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-config-dispositivos-corpo" class="divide-y divide-purple-100 text-xs bg-white text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             SUB-PAINEL 6: VERSÕES E PONTOS DE RESTAURAÇÃO DE CATÁLOGOS
+             ============================================================== -->
+        <div id="config-painel-versoes" class="config-subpainel hidden p-0">
+          <div class="p-3 bg-white border-b border-purple-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span id="config-contador-versoes" class="text-xs font-bold text-purple-950 bg-purple-100 border border-purple-300 px-2.5 py-1 rounded-full font-mono">
+                0 versões
+              </span>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+              <button 
+                onclick="App.abrirModalNovoSnapshot()"
+                class="px-3 py-1.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white rounded-lg text-xs font-bold border border-purple-400 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <span>📸</span>
+                <span>Criar Ponto de Restauração</span>
+              </button>
+
+              <label class="px-3 py-1.5 bg-white hover:bg-purple-50 text-purple-950 rounded-lg text-xs font-bold border border-purple-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                <span>📥</span>
+                <span>Importar JSON</span>
+                <input type="file" accept=".json" onchange="App.importarVersaoSnapshotArquivo(event)" class="hidden" />
+              </label>
+
+              <button 
+                onclick="App.restaurarCatalogoPadrao()"
+                class="px-3 py-1.5 bg-white hover:bg-purple-50 text-purple-950 rounded-lg text-xs font-bold border border-purple-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                title="Restaurar tabela original de fábrica do Excel"
+              >
+                <span>🔄</span>
+                <span>Restaurar Padrão de Fábrica</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left border-collapse min-w-full">
+              <thead>
+                <tr class="bg-purple-50/80 text-[10.5px] font-bold text-purple-950 uppercase border-b border-purple-200">
+                  <th class="py-2.5 px-3">Nome da Versão / Descrição</th>
+                  <th class="py-2.5 px-2 text-center">Tipo de Snapshot</th>
+                  <th class="py-2.5 px-3">Data e Hora / Autor</th>
+                  <th class="py-2.5 px-3">Conteúdo</th>
+                  <th class="py-2.5 px-3 text-center w-36">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-config-versoes-corpo" class="divide-y divide-purple-100 text-xs bg-white text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             SUB-PAINEL 7: LOG DE AUDITORIA E HISTÓRICO DE ALTERAÇÕES
+             ============================================================== -->
+        <div id="config-painel-auditoria" class="config-subpainel hidden p-0">
+          <div class="p-3 bg-white border-b border-purple-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5">
+            <!-- Campo de Busca em Tempo Real -->
+            <div class="flex-1 relative">
+              <input 
+                type="text" 
+                id="config-busca-auditoria" 
+                placeholder="Buscar por paciente, leito, fórmula, responsável ou ação..." 
+                oninput="App.filtrarLogsAuditoria()"
+                class="w-full h-8 pl-8 pr-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none placeholder:text-slate-400"
+              />
+              <span class="absolute left-2.5 top-2 text-xs text-purple-400">🔍</span>
+            </div>
+
+            <!-- Filtros de Módulo e Ação -->
+            <div class="flex flex-wrap items-center gap-2">
+              <select 
+                id="config-filtro-auditoria-modulo" 
+                onchange="App.filtrarLogsAuditoria()"
+                class="h-8 px-2.5 bg-slate-50 border border-purple-200 rounded-lg text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none cursor-pointer"
+              >
+                <option value="TODOS">Todos os Módulos</option>
+                <option value="PACIENTES">Pacientes</option>
+                <option value="CATALOGO_FORMULAS">Fórmulas / Concentrações</option>
+                <option value="CATALOGO_ENFERMARIAS">Enfermarias</option>
+                <option value="CATALOGO_INTERVALOS">Intervalos</option>
+                <option value="CATALOGO_VIAS">Vias</option>
+                <option value="CATALOGO_DISPOSITIVOS">Dispositivos</option>
+                <option value="NUTRICIONISTA">Nutricionista</option>
+                <option value="VERSIONAMENTO">Versões / Restauração</option>
+                <option value="SISTEMA">Sistema</option>
+              </select>
+
+              <select 
+                id="config-filtro-auditoria-acao" 
+                onchange="App.filtrarLogsAuditoria()"
+                class="h-8 px-2.5 bg-slate-50 border border-purple-200 rounded-lg text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none cursor-pointer"
+              >
+                <option value="TODAS">Todas as Ações</option>
+                <option value="CRIACAO">Criação</option>
+                <option value="EDICAO">Edição</option>
+                <option value="SUSPENSAO">Suspensão</option>
+                <option value="REATIVACAO">Reativação</option>
+                <option value="ALTA">Alta</option>
+                <option value="EXCLUSAO">Exclusão</option>
+                <option value="RESTAURACAO">Restauração</option>
+              </select>
+
+              <span id="config-contador-auditoria" class="text-xs font-bold text-purple-950 bg-purple-100 border border-purple-300 px-2.5 py-1 rounded-full font-mono whitespace-nowrap">
+                0 registro(s)
+              </span>
+
+              <button 
+                onclick="App.exportarLogsAuditoriaCSV()"
+                class="px-3 py-1.5 bg-white hover:bg-purple-50 text-purple-950 rounded-lg text-xs font-bold border border-purple-200 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                title="Exportar registros filtrados em CSV"
+              >
+                <span>📄</span>
+                <span>Exportar CSV</span>
+              </button>
+
+              <button 
+                onclick="App.limparLogsAuditoria()"
+                class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 rounded-lg text-xs font-bold border border-rose-200 transition-all flex items-center gap-1 cursor-pointer shadow-2xs"
+                title="Limpar histórico de auditoria"
+              >
+                <span>🗑️</span>
+                <span>Limpar</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left border-collapse min-w-full">
+              <thead>
+                <tr class="bg-purple-50/80 text-[10.5px] font-bold text-purple-950 uppercase border-b border-purple-200">
+                  <th class="py-2.5 px-3">Data e Hora / Autor</th>
+                  <th class="py-2.5 px-2 text-center">Módulo</th>
+                  <th class="py-2.5 px-2 text-center">Ação</th>
+                  <th class="py-2.5 px-3">Evento / Descrição</th>
+                  <th class="py-2.5 px-3">Resumo (De ➔ Para)</th>
+                  <th class="py-2.5 px-3 text-center w-24">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-config-auditoria-corpo" class="divide-y divide-purple-100 text-xs bg-white text-slate-700"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ==============================================================
+             SUB-PAINEL 8: CONEXÃO GOOGLE SHEETS
+             ============================================================== -->
+        <div id="config-painel-sheets" class="config-subpainel p-4 hidden">
+          <div class="max-w-3xl space-y-4">
+            <div>
+              <h4 class="text-sm font-black text-purple-950 flex items-center gap-2">
+                <span>📊</span>
+                <span>Conexão com Google Sheets (Google Apps Script Web App)</span>
+              </h4>
+              <p class="text-xs text-purple-800/80 mt-1 font-medium leading-relaxed">
+                Conecte o Lactário Digital à planilha oficial no Google Drive do Hospital São Paulo. Cole a URL da Web App gerada no Google Apps Script (terminada em <code>/exec</code>) para habilitar a sincronização em tempo real de pacientes, censo e fórmulas.
+              </p>
+            </div>
+
+            <div class="bg-purple-50/50 rounded-xl p-4 border border-purple-200 space-y-3">
+              <label for="config-api-url" class="block text-xs font-bold text-slate-800">
+                URL da API Google Apps Script (Web App):
+              </label>
+              <div class="flex flex-col sm:flex-row gap-2">
+                <input 
+                  type="url" 
+                  id="config-api-url"
+                  placeholder="https://script.google.com/macros/s/AKfycbx.../exec"
+                  class="flex-1 px-3 py-2 border border-purple-200 rounded-lg text-xs font-mono text-slate-900 focus:ring-2 focus:ring-purple-600 focus:outline-none placeholder:text-slate-400 h-9 bg-white"
+                />
+                <button 
+                  type="button"
+                  onclick="App.salvarConfigApi()"
+                  class="px-4 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer h-9 shadow-xs border border-purple-400 flex items-center justify-center gap-1.5"
+                >
+                  <span>💾</span>
+                  <span>Salvar Conexão</span>
+                </button>
+                <button 
+                  type="button"
+                  onclick="App.testarConexaoApi()"
+                  class="px-4 py-2 bg-white hover:bg-purple-50 text-purple-950 rounded-lg text-xs font-bold border border-purple-200 transition-colors cursor-pointer h-9 shadow-2xs flex items-center justify-center gap-1.5"
+                >
+                  <span>🔄</span>
+                  <span>Testar Conexão</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs">
+              <div>
+                <strong class="text-slate-800">Base Demonstrativa Oficial HSP:</strong>
+                <p class="text-[11px] text-slate-500">Recarregar os 40 pacientes e dados padrão do censo clínico.</p>
+              </div>
+              <button 
+                type="button"
+                onclick="App.restaurarDemonstrativo()" 
+                class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-bold border border-rose-200 cursor-pointer transition-colors whitespace-nowrap text-xs flex items-center gap-1"
+              >
+                <span>↺</span>
+                <span>Recarregar Relação HSP</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+  </div>
+
+  <!-- ====================================================================
+       4. MODAL: ADICIONAR / EDITAR PACIENTE
+       ==================================================================== -->
+  <div id="modal-paciente" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto modal-content border border-purple-200/80">
+      
+      <!-- Cabeçalho Centralizado com Degradê Executivo -->
+      <div class="px-6 py-4 border-b border-purple-900/40 flex flex-col items-center justify-center bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white rounded-t-2xl relative text-center">
+        <h3 id="modal-paciente-titulo" class="text-base font-black text-white uppercase tracking-tight text-center">ADICIONAR NOVO PACIENTE</h3>
+        <p id="modal-paciente-subtitulo" class="text-xs text-pink-300 font-medium mt-0.5 text-center">Preencha os dados clínicos e defina o plano nutricional</p>
+        <button onclick="App.fecharModalPaciente()" class="absolute right-4 top-3.5 text-purple-300 hover:text-white text-2xl font-black p-1 cursor-pointer">&times;</button>
+      </div>
+
+      <form id="form-paciente" onsubmit="App.salvarFormularioPaciente(event, false)" class="p-5 space-y-3.5">
+        
+        <!-- Linha 1: Número de Atendimento + Nome Completo -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-black text-purple-950 mb-1">Número de Atendimento *</label>
+            <input 
+              type="text" 
+              id="modal-rh" 
+              list="rh-sugestoes"
+              required 
+              placeholder="Ex: 54047789" 
+              class="w-full h-10 px-3 bg-purple-50/20 border border-purple-200 rounded-lg text-sm font-mono font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+            <datalist id="rh-sugestoes"></datalist>
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-black text-purple-950 mb-1">Nome Completo do Paciente *</label>
+            <input 
+              type="text" 
+              id="modal-nome" 
+              list="nomes-sugestoes" 
+              required 
+              placeholder="Nome do recém-nascido ou criança" 
+              class="w-full h-10 px-3 bg-purple-50/20 border border-purple-200 rounded-lg text-sm uppercase font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+            <datalist id="nomes-sugestoes"></datalist>
+          </div>
+        </div>
+
+        <!-- Linha 2: Leito (com Autopreenchimento) + Enfermaria -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black text-purple-950 mb-1 flex items-center justify-between">
+              <span>Leito *</span>
+              <span class="text-[10px] text-purple-900 font-extrabold bg-purple-100 px-1.5 py-0.5 rounded border border-purple-300">⚡ Auto Enfermaria</span>
+            </label>
+            <input 
+              type="text" 
+              id="modal-leito" 
+              list="leitos-sugestoes" 
+              required 
+              placeholder="Ex: A0807, J015, B0951..." 
+              style="text-transform: uppercase;"
+              oninput="App.aoDigitarLeitoModal(this.value)"
+              class="w-full h-10 px-3 bg-purple-50/20 border border-purple-200 rounded-lg text-sm font-mono font-black uppercase text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+            <datalist id="leitos-sugestoes"></datalist>
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-purple-950 mb-1">Enfermaria *</label>
+            <select id="modal-enfermaria" class="w-full h-10 px-3 bg-purple-50/20 border border-purple-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none cursor-pointer transition-all"></select>
+          </div>
+        </div>
+
+        <!-- Linha 3: Dieta Prescrita + Volume Unitário -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-black text-purple-950 mb-1">Dieta / Fórmula Prescrita *</label>
+            <select id="modal-dieta" class="w-full h-10 px-3 bg-purple-50/20 border border-purple-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none cursor-pointer"></select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-purple-950 mb-1">Vol. Unit. (ml) *</label>
+            <input type="number" id="modal-volume" required min="1" step="1" placeholder="60" class="w-full h-10 px-3 bg-purple-50/20 border border-purple-200 rounded-lg text-sm font-mono font-black text-center text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Campo Condicional: Especificação de Dieta / Alimento Especial e Quantidade -->
+        <div id="modal-container-dieta-especial" class="hidden bg-pink-50/80 p-3 rounded-xl border border-pink-200 animate-fadeIn space-y-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-xs font-black text-pink-950 mb-1 flex items-center gap-1">
+                <span>⭐ Tipo de Alimento / Dieta Especial *</span>
+              </label>
+              <input 
+                type="text" 
+                id="modal-dieta-especial-desc" 
+                placeholder="Ex: Bolacha maizena, Papinha de frutas..." 
+                class="w-full h-9 px-3 bg-white border border-pink-300 rounded-lg text-xs font-bold text-pink-950 focus:ring-2 focus:ring-purple-600 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-black text-pink-950 mb-1 flex items-center gap-1">
+                <span>⚖️ Quantidade de Alimento *</span>
+              </label>
+              <input 
+                type="text" 
+                id="modal-dieta-especial-qtd" 
+                placeholder="Ex: 2 unidades, 1 pote 100g, 50g..." 
+                class="w-full h-9 px-3 bg-white border border-pink-300 rounded-lg text-xs font-bold text-pink-950 focus:ring-2 focus:ring-purple-600 focus:outline-none"
+              />
+            </div>
+          </div>
+          <p class="text-[10px] text-pink-800 font-medium leading-tight">
+            (O alimento e a quantidade aparecerão na prescrição e na planilha oficial de Dieta Especial)
+          </p>
+        </div>
+
+        <!-- Linha 4: Bloco de Horários com Botões de Alfinete (Pin) sem Sobreposição -->
+        <div class="bg-purple-50/50 p-3.5 rounded-xl border border-purple-200/80 space-y-2.5">
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-black text-purple-950 mb-1">Horário da 1ª Refeição *</label>
+              <input 
+                type="time" 
+                id="modal-horario" 
+                value="06:00" 
+                required 
+                onchange="App.regenerarGradeHorariosModal()"
+                class="w-full h-10 px-3 bg-white border border-purple-200 rounded-lg text-xs font-black font-mono text-purple-950 focus:ring-2 focus:ring-purple-600 focus:outline-none cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label class="block text-xs font-black text-purple-950 mb-1">Intervalo entre Dietas *</label>
+              <select 
+                id="modal-intervalo" 
+                onchange="App.regenerarGradeHorariosModal()"
+                class="w-full h-10 px-3 bg-white border border-purple-200 rounded-lg text-xs font-black text-purple-950 focus:ring-2 focus:ring-purple-600 focus:outline-none cursor-pointer"
+              >
+                <option value="3" selected>De 3 em 3 horas (Padrão - 8 horários)</option>
+                <option value="2">De 2 em 2 horas (12 horários)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Grade Interativa com Botões de Alfinete (Pin) -->
+          <div class="pt-2 border-t border-purple-200/60">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-black text-purple-950 flex items-center gap-1">
+                <span>⏰ Horários da Escala Diária</span>
+                <span class="text-[11px] text-purple-700 font-medium">(Clique no horário para remover/incluir)</span>
+              </span>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] font-bold text-purple-900">Total Ativo:</span>
+                <span id="modal-contagem-refeicoes" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-purple-100 text-purple-950 border border-purple-300 font-mono">
+                  8x / dia
+                </span>
+              </div>
+            </div>
+
+            <div id="modal-grade-horarios-botoes" class="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              <!-- Renderizado dinamicamente via App.renderizarGradeBotoesModal() -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Linha 5: Via de Administração + Dispositivo de Envase -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black text-purple-950 mb-1">Via de Administração</label>
+            <select id="modal-via" class="w-full h-10 px-3 bg-purple-50/20 border border-purple-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none cursor-pointer"></select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-purple-950 mb-1">Dispositivo de Envase</label>
+            <select id="modal-dispositivo" class="w-full h-10 px-3 bg-purple-50/20 border border-purple-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none cursor-pointer"></select>
+          </div>
+        </div>
+
+        <!-- Linha 6: Observações -->
+        <div>
+          <label class="block text-xs font-black text-purple-950 mb-1">Observações</label>
+          <input type="text" id="modal-espessante" placeholder="Ex: 6% AVEIA, Espessante 2%, Bico ortodôntico nº 1, APLV..." class="w-full h-10 px-3 bg-purple-50/20 border border-purple-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none">
+        </div>
+
+        <!-- Status de Suspensão -->
+        <div class="bg-purple-50/60 border border-purple-200/80 rounded-xl p-3 flex items-center justify-between">
+          <div class="pr-3">
+            <div class="text-xs font-black text-purple-950">Status de Suspensão ("S")</div>
+            <div class="text-[11px] text-purple-800 font-medium leading-tight mt-0.5">
+              Se ativado, o paciente permanece na listagem, porém é considerado sem dieta para o plano alimentar (produção) e não gera etiquetas para esse paciente.
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+            <input type="checkbox" id="modal-suspenso" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+          </label>
+        </div>
+
+        <!-- Opção de Retenção de Campos -->
+        <div class="relative group bg-purple-50/80 border border-purple-200/80 rounded-xl p-3 flex items-center justify-between">
+          <div class="flex items-center gap-2.5 cursor-pointer">
+            <input type="checkbox" id="modal-manter-campos" class="rounded text-purple-700 h-4 w-4 focus:ring-purple-600 cursor-pointer accent-purple-600">
+            <label for="modal-manter-campos" class="text-xs font-bold text-purple-950 cursor-pointer flex items-center gap-1.5">
+              <span>📌 Manter Enfermaria e Dieta para o próximo cadastro</span>
+              <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-200 text-purple-900 text-[10px] font-black cursor-help">ℹ️</span>
+            </label>
+          </div>
+          <span class="text-[11px] text-purple-800 font-semibold hidden sm:inline">Cadastro Rápido</span>
+
+          <div class="absolute left-6 bottom-full mb-2 hidden group-hover:block w-72 sm:w-80 p-3 bg-slate-950 text-white rounded-xl shadow-2xl border border-purple-800 text-xs z-50 pointer-events-none">
+            <div class="font-black text-pink-300 mb-1 flex items-center gap-1">
+              📌 Como funciona esta retenção de dados?
+            </div>
+            <p class="text-slate-200 text-[11px] leading-relaxed">
+              Ao salvar o paciente, a <strong>Enfermaria</strong> e a <strong>Dieta</strong> selecionadas permanecerão automaticamente preenchidas para o próximo leito, permitindo cadastrar vários pacientes seguidos sem precisar selecionar tudo novamente.
+            </p>
+            <div class="absolute left-6 top-full w-0 h-0 border-x-6 border-x-transparent border-t-6 border-t-slate-950"></div>
+          </div>
+        </div>
+
+        <!-- Botões de Ação do Rodapé -->
+        <div id="modal-paciente-footer-actions" class="pt-3 border-t border-purple-100 flex flex-col sm:flex-row justify-end gap-2">
+          <button type="button" onclick="App.fecharModalPaciente()" class="px-4 py-2 text-xs font-bold text-purple-950 hover:bg-purple-50 rounded-lg transition-colors border border-purple-200/80 cursor-pointer shadow-2xs">
+            Cancelar
+          </button>
+          <button 
+            type="button" 
+            id="btn-salvar-adicionar-outro"
+            onclick="App.salvarEContinuarAdicionando(event)" 
+            class="px-4 py-2 text-xs font-bold text-purple-950 bg-purple-100 hover:bg-purple-200 border border-purple-300 rounded-lg transition-colors cursor-pointer shadow-2xs"
+          >
+            ➕ Salvar e Adicionar Próximo
+          </button>
+          <button 
+            type="submit" 
+            id="btn-salvar-paciente"
+            class="px-5 py-2 text-xs font-black text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 rounded-lg shadow-sm border border-purple-400 transition-colors cursor-pointer"
+          >
+            💾 Salvar Paciente
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>  <!-- ====================================================================
+       5. MODAL DE CONFIRMAÇÃO DE EDIÇÃO COM COMPARATIVO
+       ==================================================================== -->
+  <div id="modal-confirmar-edicao" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full modal-content border border-purple-200/80 p-5">
+      
+      <div class="flex items-center gap-3 text-purple-900 mb-2.5">
+        <div class="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center text-lg font-black text-purple-900 border border-purple-200">
+          📝
+        </div>
+        <div>
+          <h3 class="text-base font-black text-slate-950">Confirmar Alterações na Prescrição</h3>
+          <p class="text-xs text-purple-800/80 font-medium">Revise as modificações antes de gravar na relação hospitalar.</p>
+        </div>
+      </div>
+
+      <div class="bg-purple-50/50 border border-purple-200 rounded-xl p-3.5 my-3 space-y-2 text-xs">
+        <div class="font-bold text-slate-800 border-b border-purple-200 pb-1" id="confirm-edicao-paciente-nome"></div>
+        <div id="confirm-edicao-diff-list" class="space-y-1.5"></div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-purple-100">
+        <button 
+          type="button" 
+          onclick="App.cancelarConfirmacaoEdicao()" 
+          class="px-4 py-2 text-xs font-bold text-purple-950 hover:bg-purple-50 rounded-lg border border-purple-200 transition-colors cursor-pointer shadow-2xs"
+        >
+          Voltar e Ajustar
+        </button>
+        <button 
+          type="button" 
+          onclick="App.executarGravacaoEdicaoConfirmada()" 
+          class="px-5 py-2 text-xs font-black text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 rounded-lg shadow-sm border border-purple-400 transition-colors cursor-pointer"
+        >
+          ✓ Confirmar e Gravar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+
+  <!-- ====================================================================
+       7. MODAL: ADICIONAR / EDITAR FÓRMULA (CONCENTRAÇÕES E MEDIDAS)
+       ==================================================================== -->
+  <div id="modal-formula" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full modal-content border border-purple-200/80 overflow-hidden flex flex-col max-h-[92vh]">
+      
+      <!-- Cabeçalho do Modal -->
+      <div class="p-4 bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white flex justify-between items-center shrink-0 border-b border-purple-900/40">
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-wider text-pink-200">Catálogo do Lactário HSP</span>
+          <h3 class="text-sm sm:text-base font-black text-white flex items-center gap-1.5" id="modal-formula-titulo">
+            <span>⚖️</span>
+            <span>Editar Parâmetros da Fórmula</span>
+          </h3>
+        </div>
+        <button type="button" onclick="App.fecharModalFormula()" class="w-8 h-8 rounded-full bg-purple-900/50 hover:bg-purple-800 text-white flex items-center justify-center text-sm font-black transition-colors cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Formulário com Scroll Interno -->
+      <form onsubmit="App.salvarFormulaModal(event)" class="p-4 space-y-3 overflow-y-auto custom-scrollbar flex-1">
+        <input type="hidden" id="modal-formula-id" />
+
+        <!-- Linha 1: Nome do Produto e Categoria -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black text-slate-800 mb-1">Nome do Produto / Fórmula *</label>
+            <input 
+              type="text" 
+              id="modal-formula-nome" 
+              required 
+              placeholder="Ex: Pré Nan (1:30)" 
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-slate-800 mb-1">Categoria de Preparo *</label>
+            <select 
+              id="modal-formula-categoria" 
+              required 
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none cursor-pointer"
+            >
+              <option value="AUTOCLAVADA_P1">Autoclavadas - Preparo 1</option>
+              <option value="AUTOCLAVADA_P2">Autoclavadas - Preparo 2</option>
+              <option value="NAO_AUTOCLAVADA">Não Autoclavadas (Bancada Estéril)</option>
+              <option value="ESPECIAIS">Dietas Especiais</option>
+              <option value="JEJUM">Abreviação de Jejum</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Linha 2: Porcentagem (%), Pó (g) p/ 100ml, Água (ml) p/ 100ml -->
+        <div class="grid grid-cols-3 gap-2.5 bg-purple-50/50 p-2.5 rounded-xl border border-purple-200">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">Porcentagem (%)</label>
+            <input 
+              type="text" 
+              id="modal-formula-porcentagem" 
+              placeholder="Ex: 16.3%" 
+              class="w-full h-8 px-2.5 bg-white border border-purple-200 rounded-lg text-xs font-mono font-bold text-center text-slate-900 focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">Pó / 100ml (g) *</label>
+            <input 
+              type="number" 
+              id="modal-formula-po" 
+              required 
+              step="0.01" 
+              min="0" 
+              placeholder="16.3" 
+              class="w-full h-8 px-2.5 bg-white border border-purple-200 rounded-lg text-xs font-mono font-bold text-center text-purple-950 focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">Água / 100ml (ml) *</label>
+            <input 
+              type="number" 
+              id="modal-formula-agua" 
+              required 
+              step="0.1" 
+              min="0" 
+              placeholder="90.0" 
+              class="w-full h-8 px-2.5 bg-white border border-purple-200 rounded-lg text-xs font-mono font-bold text-center text-purple-950 focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <!-- Linha 3: Colher Medida (g) e Peso da Lata (g) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black text-slate-800 mb-1">Colher Medida (g) (Opcional)</label>
+            <input 
+              type="number" 
+              id="modal-formula-colher" 
+              step="0.01" 
+              min="0" 
+              placeholder="Ex: 5.4 (ou vazio)" 
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-mono text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-slate-800 mb-1">Peso Padrão da Lata (g) *</label>
+            <input 
+              type="number" 
+              id="modal-formula-lata" 
+              required 
+              step="1" 
+              min="1" 
+              placeholder="400" 
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <!-- Linha 4: Tipo de Preparo / Sanitário -->
+        <div>
+          <label class="block text-xs font-black text-slate-800 mb-1">Temperatura / Modo de Preparo</label>
+          <input 
+            type="text" 
+            id="modal-formula-preparo" 
+            placeholder="Ex: Autoclave a quente (Ciclo 1), Bancada estéril..." 
+            class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+          />
+        </div>
+
+        <!-- Linha 5: Instruções e Cuidados -->
+        <div>
+          <label class="block text-xs font-black text-slate-800 mb-1">Instruções Técnicas e Cuidados</label>
+          <textarea 
+            id="modal-formula-instrucoes" 
+            rows="2" 
+            placeholder="Ex: Pesar com rigor analítico na balança digital. Homogeneizar vigorosamente..." 
+            class="w-full p-2.5 bg-slate-50 border border-purple-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+          ></textarea>
+        </div>
+
+        <!-- Botões de Ação do Modal -->
+        <div class="pt-3 border-t border-purple-100 flex justify-end gap-2 shrink-0">
+          <button 
+            type="button" 
+            onclick="App.fecharModalFormula()" 
+            class="px-4 py-2 text-xs font-bold text-purple-950 hover:bg-purple-50 rounded-lg border border-purple-200 transition-colors cursor-pointer shadow-2xs"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            class="px-5 py-2 text-xs font-black text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 rounded-lg shadow-sm border border-purple-400 transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span>💾</span>
+            <span>Salvar Fórmula</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       8. MODAL: ADICIONAR / EDITAR ENFERMARIA
+       ==================================================================== -->
+  <div id="modal-config-enfermaria" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full modal-content border border-purple-200/80 overflow-hidden flex flex-col">
+      <div class="p-4 bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white flex justify-between items-center shrink-0 border-b border-purple-900/40">
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-wider text-pink-200">Estrutura Hospitalar HSP</span>
+          <h3 class="text-sm sm:text-base font-black text-white flex items-center gap-1.5" id="modal-enfermaria-titulo">
+            <span>🏥</span>
+            <span>Editar Enfermaria</span>
+          </h3>
+        </div>
+        <button type="button" onclick="App.fecharModalEnfermaria()" class="w-8 h-8 rounded-full bg-purple-900/50 hover:bg-purple-800 text-white flex items-center justify-center text-sm font-black transition-colors cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <form onsubmit="App.salvarModalEnfermaria(event)" class="p-4 space-y-3">
+        <input type="hidden" id="modal-enf-id" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-black text-slate-800 mb-1">Nome Completo da Enfermaria *</label>
+            <input 
+              type="text" 
+              id="modal-enf-nome" 
+              required 
+              placeholder="Ex: UTI NEONATAL" 
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-slate-800 mb-1">Sigla / Código *</label>
+            <input 
+              type="text" 
+              id="modal-enf-sigla" 
+              required 
+              placeholder="Ex: UTI NEO" 
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-800 mb-1">Localização (Andar / Bloco) *</label>
+          <input 
+            type="text" 
+            id="modal-enf-andar" 
+            required 
+            placeholder="Ex: 8º Andar - Bloco A" 
+            class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black text-slate-800 mb-1">Leito Inicial (Ref. Config Excel)</label>
+            <input 
+              type="text" 
+              id="modal-enf-leito-inicial" 
+              placeholder="Ex: A0800" 
+              oninput="App.aoMudarFaixaLeitosModalEnf()" 
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-mono font-bold uppercase text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-slate-800 mb-1">Leito Final (Ref. Config Excel)</label>
+            <input 
+              type="text" 
+              id="modal-enf-leito-final" 
+              placeholder="Ex: A0817" 
+              oninput="App.aoMudarFaixaLeitosModalEnf()" 
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-mono font-bold uppercase text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-800 mb-1">Faixa ou Lista de Leitos *</label>
+          <input 
+            type="text" 
+            id="modal-enf-leitos" 
+            required 
+            placeholder="Ex: A0800 a A0817 (ou leitos separados por vírgula)" 
+            class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-mono text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+          />
+          <p class="text-[11px] text-purple-700 mt-1">Exemplos: <code>A0800 a A0817</code> ou <code>J010, J011, J012, J013</code></p>
+        </div>
+
+        <div class="pt-3 border-t border-purple-100 flex justify-end gap-2 shrink-0">
+          <button 
+            type="button" 
+            onclick="App.fecharModalEnfermaria()" 
+            class="px-4 py-2 text-xs font-bold text-purple-950 hover:bg-purple-50 rounded-lg border border-purple-200 transition-colors cursor-pointer shadow-2xs"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            class="px-5 py-2 text-xs font-black text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 rounded-lg shadow-sm border border-purple-400 transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span>💾</span>
+            <span>Salvar Enfermaria</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       9. MODAL: ADICIONAR / EDITAR INTERVALO ENTRE DIETAS
+       ==================================================================== -->
+  <div id="modal-config-intervalo" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full modal-content border border-purple-200/80 overflow-hidden flex flex-col">
+      <div class="p-4 bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white flex justify-between items-center shrink-0 border-b border-purple-900/40">
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-wider text-pink-200">Escala de Horários HSP</span>
+          <h3 class="text-sm sm:text-base font-black text-white flex items-center gap-1.5" id="modal-intervalo-titulo">
+            <span>⏰</span>
+            <span>Editar Intervalo de Dieta</span>
+          </h3>
+        </div>
+        <button type="button" onclick="App.fecharModalIntervalo()" class="w-8 h-8 rounded-full bg-purple-900/50 hover:bg-purple-800 text-white flex items-center justify-center text-sm font-black transition-colors cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <form onsubmit="App.salvarModalIntervalo(event)" class="p-4 space-y-3">
+        <input type="hidden" id="modal-int-id" />
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-black text-slate-800 mb-1">Intervalo (Horas) *</label>
+            <input 
+              type="number" 
+              id="modal-int-horas" 
+              required 
+              min="1" 
+              max="24" 
+              step="1" 
+              placeholder="3" 
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none text-center"
+            />
+          </div>
+
+          <div>
+            <label class="block text-xs font-black text-slate-800 mb-1">Refeições / Dia *</label>
+            <input 
+              type="number" 
+              id="modal-int-refeicoes" 
+              required 
+              min="1" 
+              max="24" 
+              step="1" 
+              placeholder="8" 
+              class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none text-center"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-800 mb-1">Rótulo / Descrição na Prescrição *</label>
+          <input 
+            type="text" 
+            id="modal-int-label" 
+            required 
+            placeholder="Ex: De 3 em 3 horas (Padrão - 8 horários)" 
+            class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+          />
+        </div>
+
+        <div class="pt-3 border-t border-purple-100 flex justify-end gap-2 shrink-0">
+          <button 
+            type="button" 
+            onclick="App.fecharModalIntervalo()" 
+            class="px-4 py-2 text-xs font-bold text-purple-950 hover:bg-purple-50 rounded-lg border border-purple-200 transition-colors cursor-pointer shadow-2xs"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            class="px-5 py-2 text-xs font-black text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 rounded-lg shadow-sm border border-purple-400 transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span>💾</span>
+            <span>Salvar Intervalo</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       10. MODAL: ADICIONAR / EDITAR VIA DE ADMINISTRAÇÃO
+       ==================================================================== -->
+  <div id="modal-config-via" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full modal-content border border-purple-200/80 overflow-hidden flex flex-col">
+      <div class="p-4 bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white flex justify-between items-center shrink-0 border-b border-purple-900/40">
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-wider text-pink-200">Protocolo Clínico HSP</span>
+          <h3 class="text-sm sm:text-base font-black text-white flex items-center gap-1.5" id="modal-via-titulo">
+            <span>💉</span>
+            <span>Editar Via de Administração</span>
+          </h3>
+        </div>
+        <button type="button" onclick="App.fecharModalVia()" class="w-8 h-8 rounded-full bg-purple-900/50 hover:bg-purple-800 text-white flex items-center justify-center text-sm font-black transition-colors cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <form onsubmit="App.salvarModalVia(event)" class="p-4 space-y-3">
+        <input type="hidden" id="modal-via-id-original" />
+
+        <div>
+          <label class="block text-xs font-black text-slate-800 mb-1">Nome da Via de Administração *</label>
+          <input 
+            type="text" 
+            id="modal-via-nome" 
+            required 
+            placeholder="Ex: SONDA NASOENTERAL (SNE)" 
+            class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none uppercase"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-800 mb-1">Classificação / Descrição Clínica (Opcional)</label>
+          <input 
+            type="text" 
+            id="modal-via-descricao" 
+            placeholder="Ex: Alimentação por sonda gástrica/enteral" 
+            class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+          />
+        </div>
+
+        <div class="pt-3 border-t border-purple-100 flex justify-end gap-2 shrink-0">
+          <button 
+            type="button" 
+            onclick="App.fecharModalVia()" 
+            class="px-4 py-2 text-xs font-bold text-purple-950 hover:bg-purple-50 rounded-lg border border-purple-200 transition-colors cursor-pointer shadow-2xs"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            class="px-5 py-2 text-xs font-black text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 rounded-lg shadow-sm border border-purple-400 transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span>💾</span>
+            <span>Salvar Via</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       11. MODAL: ADICIONAR / EDITAR DISPOSITIVO DE ENVASE
+       ==================================================================== -->
+  <div id="modal-config-dispositivo" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full modal-content border border-purple-200/80 overflow-hidden flex flex-col">
+      <div class="p-4 bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white flex justify-between items-center shrink-0 border-b border-purple-900/40">
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-wider text-pink-200">Materiais de Bancada HSP</span>
+          <h3 class="text-sm sm:text-base font-black text-white flex items-center gap-1.5" id="modal-dispositivo-titulo">
+            <span>🍼</span>
+            <span>Editar Dispositivo de Envase</span>
+          </h3>
+        </div>
+        <button type="button" onclick="App.fecharModalDispositivo()" class="w-8 h-8 rounded-full bg-purple-900/50 hover:bg-purple-800 text-white flex items-center justify-center text-sm font-black transition-colors cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <form onsubmit="App.salvarModalDispositivo(event)" class="p-4 space-y-3">
+        <input type="hidden" id="modal-disp-id-original" />
+
+        <div>
+          <label class="block text-xs font-black text-slate-800 mb-1">Nome do Dispositivo de Envase *</label>
+          <input 
+            type="text" 
+            id="modal-disp-nome" 
+            required 
+            placeholder="Ex: Mamadeira" 
+            class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-800 mb-1">Tipo / Categoria de Material (Opcional)</label>
+          <input 
+            type="text" 
+            id="modal-disp-descricao" 
+            placeholder="Ex: Frasco de vidro/polipropileno para via oral" 
+            class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+          />
+        </div>
+
+        <div class="pt-3 border-t border-purple-100 flex justify-end gap-2 shrink-0">
+          <button 
+            type="button" 
+            onclick="App.fecharModalDispositivo()" 
+            class="px-4 py-2 text-xs font-bold text-purple-950 hover:bg-purple-50 rounded-lg border border-purple-200 transition-colors cursor-pointer shadow-2xs"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            class="px-5 py-2 text-xs font-black text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 rounded-lg shadow-sm border border-purple-400 transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span>💾</span>
+            <span>Salvar Dispositivo</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       12. MODAL DE EVOLUÇÃO NUTRICIONAL DO PACIENTE (LINHA DO TEMPO e HISTÓRICO)
+       ==================================================================== -->
+  <div id="modal-evolucao-paciente" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[94vh] overflow-y-auto modal-content border border-purple-200/80 flex flex-col">
+      
+      <!-- Cabeçalho Executivo -->
+      <div class="px-5 py-3.5 border-b border-purple-900/40 flex items-center justify-between bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white rounded-t-2xl shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-900/60 border border-purple-400/40 flex items-center justify-center text-xl">
+            📈
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 id="evolucao-paciente-nome" class="text-base font-black text-white uppercase tracking-tight">NOME DO PACIENTE</h3>
+              <span id="evolucao-paciente-status" class="px-2 py-0.5 rounded-full text-[10.5px] font-black bg-emerald-100 text-emerald-950 border border-emerald-300">✓ Dieta Ativa</span>
+            </div>
+            <p id="evolucao-paciente-subtitulo" class="text-xs text-pink-300 font-medium mt-0.5">Leito: - • Nº de Atendimento (RH): - • Enfermaria: -</p>
+          </div>
+        </div>
+        <button onclick="EvolucaoModule.fecharModal()" class="text-purple-300 hover:text-white text-2xl font-black p-1 cursor-pointer">&times;</button>
+      </div>
+
+      <!-- Conteúdo do Modal -->
+      <div class="p-4 sm:p-5 space-y-4 overflow-y-auto">
+        
+        <!-- Bloco do Gráfico de Linha do Tempo -->
+        <div class="bg-purple-50/40 rounded-2xl border border-purple-200/80 p-4 space-y-2">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-200/60 pb-2">
+            <div>
+              <span class="text-[10px] uppercase font-black tracking-wider text-purple-700">PROGRESSÃO CLÍNICA</span>
+              <h4 class="text-xs sm:text-sm font-black text-purple-950 flex items-center gap-1.5">
+                <span>📈 Linha do Tempo da Evolução de Dietas e Volumes</span>
+              </h4>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-[11px] text-slate-600 font-medium">Clique em um ponto para destacar na tabela</span>
+            </div>
+          </div>
+
+          <!-- Container do Gráfico SVG -->
+          <div id="evolucao-grafico-container" class="w-full overflow-x-auto py-1"></div>
+        </div>
+
+        <!-- Barra de Ações e Opções de Impressão -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-purple-200">
+          <div class="flex items-center gap-2 cursor-pointer">
+            <input 
+              type="checkbox" 
+              id="evolucao-incluir-grafico" 
+              checked 
+              class="rounded text-purple-700 h-4 w-4 focus:ring-purple-600 cursor-pointer accent-purple-600"
+            />
+            <label for="evolucao-incluir-grafico" class="text-xs font-bold text-purple-950 cursor-pointer">
+              Incluir Gráfico de Linha do Tempo na Impressão do Relatório
+            </label>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button 
+              type="button" 
+              onclick="EvolucaoModule.imprimirRelatorio()" 
+              class="px-4 py-2 text-xs font-black text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 rounded-lg shadow-sm border border-purple-400 transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <span>🖨️</span>
+              <span>Imprimir Relatório de Evolução</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabela / Lista Detalhada de Evolução -->
+        <div class="bg-white rounded-xl border border-purple-200 overflow-hidden shadow-2xs">
+          <div class="px-4 py-2.5 bg-purple-50/70 border-b border-purple-200 flex justify-between items-center">
+            <span class="text-xs font-black uppercase text-purple-950">📋 Detalhamento Cronológico das Prescrições</span>
+            <span class="text-[11px] text-slate-500 font-medium">Ordem Decrescente</span>
+          </div>
+          <div class="overflow-x-auto w-full max-h-60">
+            <table class="w-full text-left border-collapse min-w-[700px] text-xs">
+              <thead>
+                <tr class="bg-purple-100/60 text-[11px] font-black uppercase text-purple-950 border-b border-purple-200">
+                  <th class="py-2 px-3 w-28">DATA / HORA</th>
+                  <th class="py-2 px-3">FÓRMULA / DIETA</th>
+                  <th class="py-2 px-3 text-center w-28">ESCALA</th>
+                  <th class="py-2 px-3 text-center w-24">VOL. DIA</th>
+                  <th class="py-2 px-3">VIA / DISP.</th>
+                  <th class="py-2 px-3">OBSERVAÇÃO</th>
+                  <th class="py-2 px-3 w-32">NUTRICIONISTA</th>
+                </tr>
+              </thead>
+              <tbody id="evolucao-tabela-corpo" class="divide-y divide-purple-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Rodapé do Modal -->
+      <div class="px-5 py-3 border-t border-purple-100 flex justify-end gap-2 bg-purple-50/30 rounded-b-2xl shrink-0">
+        <button 
+          type="button" 
+          onclick="EvolucaoModule.fecharModal()" 
+          class="px-5 py-2 text-xs font-black text-purple-950 hover:bg-purple-100 rounded-lg border border-purple-300 transition-colors cursor-pointer shadow-2xs"
+        >
+          Fechar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       13. MODAL: NOVO PONTO DE RESTAURAÇÃO MANUAL
+       ==================================================================== -->
+  <div id="modal-novo-snapshot" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full modal-content border border-purple-200/80 overflow-hidden flex flex-col">
+      <div class="p-4 bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white flex justify-between items-center shrink-0 border-b border-purple-900/40">
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-wider text-pink-200">Segurança de Dados</span>
+          <h3 class="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
+            <span>📸</span>
+            <span>Criar Ponto de Restauração</span>
+          </h3>
+        </div>
+        <button type="button" onclick="App.fecharModalNovoSnapshot()" class="w-8 h-8 rounded-full bg-purple-900/50 hover:bg-purple-800 text-white flex items-center justify-center text-sm font-black transition-colors cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <form onsubmit="App.salvarNovoSnapshotManual(event)" class="p-4 space-y-3">
+        <div>
+          <label class="block text-xs font-black text-slate-800 mb-1">Nome do Ponto de Restauração *</label>
+          <input 
+            type="text" 
+            id="modal-snapshot-nome" 
+            required 
+            placeholder="Ex: Valores_Catálogo_e_Listas_de_Referência_do_Lactário_em_20-08-2026..." 
+            class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-mono font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-800 mb-1">Motivo / Justificativa Clínica (Opcional)</label>
+          <input 
+            type="text" 
+            id="modal-snapshot-motivo" 
+            placeholder="Ex: Backup manual antes da revisão do cardápio pediátrico..." 
+            class="w-full h-9 px-3 bg-slate-50 border border-purple-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:ring-2 focus:ring-purple-600 focus:outline-none"
+          />
+        </div>
+
+        <div class="bg-purple-50/70 p-3 rounded-xl border border-purple-200/80 text-[11px] text-purple-900">
+          <p><strong>ℹ️ O que será salvo:</strong> Uma cópia idêntica do estado atual de todas as 28 fórmulas, 47 enfermarias, intervalos de horários, vias e dispositivos.</p>
+        </div>
+
+        <div class="pt-3 border-t border-purple-100 flex justify-end gap-2 shrink-0">
+          <button 
+            type="button" 
+            onclick="App.fecharModalNovoSnapshot()" 
+            class="px-4 py-2 text-xs font-bold text-purple-950 hover:bg-purple-50 rounded-lg border border-purple-200 transition-colors cursor-pointer shadow-2xs"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            class="px-5 py-2 text-xs font-black text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 rounded-lg shadow-sm border border-purple-400 transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span>💾</span>
+            <span>Criar Snapshot</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       14. MODAL: COMPARADOR / DIFF DE VERSÃO ANTES DE RESTAURAR
+       ==================================================================== -->
+  <div id="modal-diff-snapshot" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] modal-content border border-purple-200/80 overflow-hidden flex flex-col">
+      <div class="p-4 bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white flex justify-between items-center shrink-0 border-b border-purple-900/40">
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-wider text-pink-200">Auditoria e Comparativo de Versão</span>
+          <h3 class="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
+            <span>🔍</span>
+            <span id="modal-diff-titulo">Comparar Versão com Estado Atual</span>
+          </h3>
+        </div>
+        <button type="button" onclick="App.fecharModalDiffSnapshot()" class="w-8 h-8 rounded-full bg-purple-900/50 hover:bg-purple-800 text-white flex items-center justify-center text-sm font-black transition-colors cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-3.5">
+        <div id="modal-diff-info-versao" class="bg-purple-50/70 p-3 rounded-xl border border-purple-200/80 text-xs"></div>
+        <div id="modal-diff-conteudo" class="space-y-3"></div>
+      </div>
+
+      <div class="p-3.5 border-t border-purple-100 bg-purple-50/30 flex justify-between items-center shrink-0">
+        <button 
+          type="button" 
+          onclick="App.fecharModalDiffSnapshot()" 
+          class="px-4 py-2 text-xs font-bold text-purple-950 hover:bg-purple-100 rounded-lg border border-purple-200 transition-colors cursor-pointer shadow-2xs"
+        >
+          Fechar
+        </button>
+        <button 
+          type="button" 
+          id="btn-confirmar-restaurar-diff"
+          class="px-5 py-2 text-xs font-black text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 rounded-lg shadow-sm border border-purple-400 transition-colors cursor-pointer flex items-center gap-1.5"
+        >
+          <span>⏪</span>
+          <span>Restaurar Esta Versão Agora</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       15. MODAL: DETALHES COMPLETOS DE LOG DE AUDITORIA (DE ➔ PARA)
+       ==================================================================== -->
+  <div id="modal-detalhes-auditoria" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] modal-content border border-purple-200/80 overflow-hidden flex flex-col">
+      <div class="p-4 bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white flex justify-between items-center shrink-0 border-b border-purple-900/40">
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-wider text-pink-200">Log de Auditoria Clínica</span>
+          <h3 class="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
+            <span>📜</span>
+            <span>Detalhamento de Modificações</span>
+          </h3>
+        </div>
+        <button type="button" onclick="App.fecharModalDetalhesAuditoria()" class="w-8 h-8 rounded-full bg-purple-900/50 hover:bg-purple-800 text-white flex items-center justify-center text-sm font-black transition-colors cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-3">
+        <div id="modal-detalhes-auditoria-header" class="bg-purple-50/70 p-3 rounded-xl border border-purple-200/80 text-xs"></div>
+        <div class="border border-purple-100 rounded-xl overflow-hidden shadow-2xs">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-purple-100/70 text-purple-950 font-bold border-b border-purple-200">
+                <th class="py-2.5 px-3">Campo / Parâmetro</th>
+                <th class="py-2.5 px-3 text-rose-900">Valor Anterior</th>
+                <th class="py-2.5 px-3 text-emerald-900">Valor Alterado</th>
+              </tr>
+            </thead>
+            <tbody id="modal-detalhes-auditoria-lista" class="divide-y divide-purple-100 bg-white"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="p-3.5 border-t border-purple-100 bg-purple-50/30 flex justify-end shrink-0">
+        <button 
+          type="button" 
+          onclick="App.fecharModalDetalhesAuditoria()" 
+          class="px-5 py-2 text-xs font-black text-purple-950 hover:bg-purple-100 rounded-lg border border-purple-300 transition-colors cursor-pointer shadow-2xs"
+        >
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       16. MODAIS DE AÇÕES EM LOTE, ESTEIRA E ALTAS HOSPITALARES
+       ==================================================================== -->
+
+  <!-- Modal A: Confirmação de Exclusão em Lote -->
+  <div id="modal-lote-exclusao" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] modal-content border border-rose-200 overflow-hidden flex flex-col">
+      <div class="p-4 bg-gradient-to-r from-rose-950 via-slate-950 to-rose-950 text-white flex justify-between items-center shrink-0 border-b border-rose-900/40">
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-wider text-rose-300">Ação Crítica de Segurança</span>
+          <h3 class="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
+            <span>🗑️</span>
+            <span>Confirmar Exclusão em Lote</span>
+          </h3>
+        </div>
+        <button type="button" onclick="LoteEsteiraModule.fecharModalExclusaoLote()" class="w-8 h-8 rounded-full bg-rose-900/50 hover:bg-rose-800 text-white flex items-center justify-center text-sm font-black transition-colors cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-3">
+        <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 leading-relaxed font-medium">
+          <strong class="font-black text-rose-950 block mb-1">Atenção! Você está prestes a excluir <span id="lote-exclusao-total" class="font-black underline">0</span> paciente(s):</strong>
+          Os pacientes abaixo serão removidos do censo ativo e seus registros arquivados no log de auditoria.
+        </div>
+
+        <div id="lote-exclusao-lista-pacientes" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar p-1"></div>
+      </div>
+
+      <div class="p-3.5 border-t border-rose-100 bg-rose-50/40 flex justify-end gap-2 shrink-0">
+        <button 
+          type="button" 
+          onclick="LoteEsteiraModule.fecharModalExclusaoLote()" 
+          class="px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-300 transition-colors cursor-pointer"
+        >
+          Cancelar
+        </button>
+        <button 
+          type="button" 
+          onclick="LoteEsteiraModule.confirmarExclusaoLote()" 
+          class="px-5 py-2 text-xs font-black text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm border border-rose-700 transition-colors cursor-pointer flex items-center gap-1.5"
+        >
+          <span>🗑️</span>
+          <span>Confirmar Exclusão</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal B: Alta Hospitalar com Observação Opcional e Suporte a Esteira -->
+  <div id="modal-alta-paciente" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] modal-content border border-purple-200 overflow-hidden flex flex-col">
+      <div class="p-4 bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white flex justify-between items-center shrink-0 border-b border-purple-900/40">
+        <div>
+          <h3 id="modal-alta-titulo-progresso" class="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
+            <span>🏥</span>
+            <span>REGISTRAR ALTA HOSPITALAR</span>
+          </h3>
+        </div>
+        <button type="button" onclick="LoteEsteiraModule.interromperEsteiraAlta()" class="w-8 h-8 rounded-full bg-purple-900/50 hover:bg-purple-800 text-white flex items-center justify-center text-sm font-black transition-colors cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-3.5">
+        <div id="modal-alta-paciente-detalhes"></div>
+
+        <div>
+          <label for="modal-alta-observacao" class="block text-xs font-bold text-slate-800 mb-1">
+            Motivo / Observação da Alta <span class="text-slate-400 font-normal">(Opcional)</span>:
+          </label>
+          <textarea 
+            id="modal-alta-observacao" 
+            rows="3" 
+            placeholder="Ex: Alta domiciliar com orientações, transferido para Enfermaria 8º Leste, jejum cirúrgico, etc..." 
+            class="w-full p-2.5 bg-slate-50 border border-purple-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-600 placeholder:text-slate-400 resize-none"
+          ></textarea>
+        </div>
+
+        <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 flex items-start gap-2">
+          <span class="text-base leading-none">ℹ️</span>
+          <span>O paciente será desativado do censo ativo e o evento será registrado permanentemente na aba <strong>TB_LOG_ALTAS</strong> e no histórico de auditoria.</span>
+        </div>
+      </div>
+
+      <div class="p-3.5 border-t border-purple-100 bg-purple-50/30 flex justify-between items-center shrink-0">
+        <button 
+          type="button" 
+          onclick="LoteEsteiraModule.interromperEsteiraAlta()" 
+          class="px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-300 transition-colors cursor-pointer"
+        >
+          Cancelar / Sair
+        </button>
+
+        <button 
+          type="button" 
+          id="btn-confirmar-alta-paciente"
+          onclick="LoteEsteiraModule.confirmarAltaAtual()"
+          class="px-5 py-2 text-xs font-black text-white bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 rounded-lg shadow-sm border border-amber-600 transition-colors cursor-pointer flex items-center gap-1.5"
+        >
+          <span>🏥</span>
+          <span>Confirmar Alta</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal C: Resumo de Fechamento da Sessão e Auditoria Visual "De ➔ Para" -->
+  <div id="modal-resumo-de-para" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[92vh] modal-content border border-purple-300 overflow-hidden flex flex-col">
+      <div class="p-4 bg-gradient-to-r from-purple-950 via-slate-950 to-purple-950 text-white flex justify-between items-center shrink-0 border-b border-purple-900/40">
+        <div>
+          <span class="text-[10px] font-black uppercase tracking-wider text-pink-300">Auditoria Visual da Sessão</span>
+          <h3 class="text-sm sm:text-base font-black text-white flex items-center gap-2">
+            <span>📋</span>
+            <span>Resumo das Alterações Realizadas (De ➔ Para)</span>
+          </h3>
+        </div>
+        <button type="button" onclick="LoteEsteiraModule.fecharModalResumoDePara()" class="w-8 h-8 rounded-full bg-purple-900/50 hover:bg-purple-800 text-white flex items-center justify-center text-sm font-black transition-colors cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto custom-scrollbar flex-1 space-y-3">
+        <div class="flex items-center justify-between bg-purple-50/80 p-3 rounded-xl border border-purple-200 text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-base">✨</span>
+            <span class="font-bold text-purple-950">Esteira concluída com sucesso! Confira abaixo a relação detalhada dos valores modificados:</span>
+          </div>
+          <span id="resumo-de-para-total-modificados" class="px-2.5 py-1 bg-purple-200 text-purple-950 rounded-full font-black text-xs">0 paciente(s)</span>
+        </div>
+
+        <div class="border border-purple-200 rounded-xl overflow-hidden shadow-2xs">
+          <table class="w-full text-left text-xs border-collapse min-w-full">
+            <thead>
+              <tr class="bg-purple-100 text-[11px] font-black text-purple-950 uppercase border-b border-purple-200">
+                <th class="py-2.5 px-3 w-1/3">Paciente / Leito / Enfermaria</th>
+                <th class="py-2.5 px-3 w-1/4">Campo Modificado</th>
+                <th class="py-2.5 px-3 text-rose-900 w-1/5">Dado Anterior</th>
+                <th class="py-2.5 px-3 text-emerald-900 w-1/5">Novo Dado Inserido</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-resumo-de-para-corpo" class="divide-y divide-purple-100 bg-white"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="p-3.5 border-t border-purple-100 bg-purple-50/30 flex justify-end shrink-0">
+        <button 
+          type="button" 
+          onclick="LoteEsteiraModule.fecharModalResumoDePara()" 
+          class="px-6 py-2 text-xs font-black text-white bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 rounded-lg shadow-sm border border-purple-400 transition-colors cursor-pointer flex items-center gap-1.5"
+        >
+          <span>✓</span>
+          <span>Fechar Resumo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       17. ÁREAS OCULTAS DE IMPRESSÃO (@MEDIA PRINT)
+       ==================================================================== -->
+  <div id="print-area-zebra"></div>
+  <div id="print-area-bancada"></div>
+  <div id="print-area-evolucao"></div>
+
+  <!-- Container de Notificações Toast -->
+  <div id="toast-container"></div>
+
+  <!-- ====================================================================
+       17. SCRIPTS DA APLICAÇÃO
+       ==================================================================== -->
+  <script src="js/config.js"></script>
+  <script src="js/data/dietas-padrao.js"></script>
+  <script src="js/data/leitos-hsp.js"></script>
+  <script src="js/data/enfermarias-spdm.js"></script>
+  <script src="js/data/mock-censo.js"></script>
+  <script src="js/services/api.js"></script>
+  <script src="js/modules/auditoria.js"></script>
+  <script src="js/modules/versionamento.js"></script>
+  <script src="js/modules/censo.js"></script>
+  <script src="js/modules/planilhas-censo.js"></script>
+  <script src="js/modules/lote-esteira.js"></script>
+  <script src="js/modules/bancada.js"></script>
+  <script src="js/modules/dashboard.js"></script>
+  <script src="js/modules/evolucao.js"></script>
+  <script src="js/modules/spdm.js"></script>
+  <script src="js/modules/etiquetas.js"></script>
+  <script src="js/modules/compras.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
